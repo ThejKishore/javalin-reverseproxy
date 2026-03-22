@@ -1,0 +1,494 @@
+# Javalin Gateway
+
+A **production-ready, fully-featured API reverse proxy** built on
+[Javalin 7.1.0](https://javalin.io/) and Java 21.
+
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-21+-orange.svg)](https://openjdk.org/projects/jdk/21/)
+[![Javalin](https://img.shields.io/badge/Javalin-7.1.0-blue.svg)](https://javalin.io/)
+
+---
+
+## Table of Contents
+
+1. [Features](#features)
+2. [Architecture](#architecture)
+3. [Quick Start](#quick-start)
+4. [Configuration Reference](#configuration-reference)
+5. [Routing Types](#routing-types)
+6. [Load Balancing](#load-balancing)
+7. [Rate Limiting](#rate-limiting)
+8. [Circuit Breaker](#circuit-breaker)
+9. [Caching](#caching)
+10. [Header Management](#header-management)
+11. [Request & Response Transformation](#request--response-transformation)
+12. [Tracing & Forwarded Headers](#tracing--forwarded-headers)
+13. [Auditing](#auditing)
+14. [Authentication Header Forwarding](#authentication-header-forwarding)
+15. [WebSocket Proxying](#websocket-proxying)
+16. [Dynamic Route Management (Admin API)](#dynamic-route-management-admin-api)
+17. [Health Checks](#health-checks)
+18. [Database-Backed Routes](#database-backed-routes)
+19. [Kubernetes Deployment](#kubernetes-deployment)
+20. [Building & Running](#building--running)
+21. [Testing](#testing)
+22. [Module Structure](#module-structure)
+
+---
+
+## Features
+
+| Capability | Details |
+|---|---|
+| **Reverse Proxy** | Forwards all HTTP verbs (GET/POST/PUT/PATCH/DELETE/HEAD/OPTIONS) to upstream servers |
+| **Routing** | Path-prefix, Regex, Header-based, Traffic-split |
+| **Load Balancing** | Round-Robin, Weighted, Random — per route |
+| **Rate Limiting** | Sliding-window rate limiter via Resilience4j, per route |
+| **Circuit Breaker** | Resilience4j circuit breaker, per route |
+| **Caching** | Caffeine in-process cache for GET responses |
+| **Header Management** | Add / exclude / deduplicate headers on request & response |
+| **Strip Prefix** | Remove a path prefix before forwarding |
+| **Body Transform** | Pluggable `RequestTransformer` / `ResponseTransformer` hooks |
+| **Tracing** | Propagates / generates `X-Request-ID` and `X-Trace-ID` |
+| **Forwarded-For** | Injects `X-Forwarded-For` and `X-Real-IP` |
+| **Auth Forwarding** | Configurable list of auth headers forwarded verbatim |
+| **Auditing** | Records request/response metadata to database or log file |
+| **WebSocket** | Full bidirectional WebSocket proxying via OkHttp |
+| **HTTP/2 & HTTPS** | Transparent via OkHttp — no extra configuration needed |
+| **Dynamic Routes** | Add/update/delete/enable/disable routes via REST API |
+| **Config Reload** | Periodic refresh from YAML file **or** database |
+| **Health Checks** | `/gateway/health`, `/gateway/health/live`, `/gateway/health/ready` |
+| **Kubernetes-ready** | Stateless; multiple replicas share routes via Postgres |
+
+---
+
+## Architecture
+
+```
+Client
+  │
+  ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  Javalin 7.1.0 (Jetty 12)                                              │
+│                                                                        │
+│  GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS  /<path>  →  ProxyHandler      │
+│  WS  /<path>                             →  WebSocketProxyHandler      │
+│  GET /gateway/health/**                  →  HealthController           │
+│  *   /gateway/admin/**                   →  AdminController            │
+└────────────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+         RouteRegistry.match(ctx)
+                │
+                ▼
+   ┌────────── Filter Chain ────────────────────────────────────────┐
+   │  TracingFilter          (inject X-Request-ID, X-Trace-ID)      │
+   │  SlidingWindowRateLimiter  (optional, per-route)               │
+   │  CircuitBreakerGatewayFilter  (optional, per-route)            │
+   │  CacheGatewayFilter     (optional, GET only)                   │
+   │  ForwardedForFilter     (X-Forwarded-For / X-Real-IP)          │
+   │  HeaderMutationFilter   (add/exclude request & response hdrs)  │
+   │  TransformGatewayFilter (pluggable body transforms)            │
+   │  DedupeResponseHeadersFilter  (optional)                       │
+   │  ProxyFilter            ← terminal: LoadBalancer + OkHttp      │
+   └────────────────────────────────────────────────────────────────┘
+                │
+                ▼
+         Upstream server(s)
+```
+
+Filter chains are **pre-built per route** at startup / reload time and stored in the `RouteRegistry`.
+Each incoming request creates a fresh `DefaultFilterChain` instance (immutable, index-based) — no locking needed at request time.
+
+---
+
+## Quick Start
+
+### Prerequisites
+
+- Java 21+
+- Gradle 8.x (wrapper included)
+
+### Run
+
+```bash
+git clone https://github.com/your-org/javalin-gateway.git
+cd javalin-gateway
+./gradlew :app:run
+```
+
+The gateway starts on **port 8080** with the sample route (`/api/example → http://localhost:9090`).
+
+### Verify
+
+```bash
+curl http://localhost:8080/gateway/health
+curl http://localhost:8080/gateway/admin/routes
+```
+
+---
+
+## Configuration Reference
+
+All configuration lives under the top-level `gateway:` key in
+`app/src/main/resources/application.yml`.
+
+```yaml
+gateway:
+  port: 8080
+  config-source: yaml             # "yaml" or "database"
+  refresh-interval-seconds: 60
+
+  datasource:
+    type: h2                      # "h2" or "postgres"
+    url: "jdbc:h2:mem:gateway;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+    username: sa
+    password: ""
+
+  routes:
+    - id: my-service
+      name: My Service
+      path-pattern: /api/my
+      routing-type: PATH          # PATH | REGEX | HEADER | TRAFFIC_SPLIT
+      strip-prefix: /api/my
+      enabled: true
+      timeout-ms: 5000
+      load-balancer-type: ROUND_ROBIN   # ROUND_ROBIN | WEIGHTED | RANDOM
+
+      targets:
+        - url: http://my-service-1:8080
+          weight: 2
+        - url: http://my-service-2:8080
+          weight: 1
+
+      rate-limit-policy:
+        enabled: true
+        requests-per-second: 100
+        burst: 20
+        timeout-duration-ms: 0
+
+      circuit-breaker-policy:
+        enabled: true
+        failure-rate-threshold: 50
+        wait-duration-seconds: 60
+        sliding-window-size: 10
+
+      cache-policy:
+        enabled: true
+        ttl-seconds: 300
+        cache-key-strategy: METHOD_PATH_QUERY
+
+      header-rules:
+        add-request:
+          X-Gateway: "javalin-gateway"
+        exclude-request:
+          - Cookie
+        add-response:
+          X-Powered-By: "javalin-gateway"
+        exclude-response:
+          - Server
+        dedupe-response-headers:
+          - Access-Control-Allow-Origin
+
+      auth-forward-headers:
+        - Authorization
+        - X-API-Key
+
+      audit-enabled: true
+      audit-store: database       # "database" or "file"
+```
+
+---
+
+## Routing Types
+
+### PATH
+Matches when the request path **starts with** `path-pattern` at a segment boundary.
+```yaml
+path-pattern: /api/users
+# Matches: /api/users, /api/users/123
+# Does NOT match: /api/users-v2
+```
+
+### REGEX
+Full Java regex match against the request path.
+```yaml
+routing-type: REGEX
+path-pattern: "/api/v[0-9]+/.*"
+```
+
+### HEADER
+Matches when a specific header (optionally with a specific value) is present.
+```yaml
+routing-type: HEADER
+header-match-name: X-Canary
+header-match-value: "true"
+```
+
+### TRAFFIC_SPLIT
+Weight-based distribution with no path constraint.
+```yaml
+routing-type: TRAFFIC_SPLIT
+load-balancer-type: WEIGHTED
+targets:
+  - url: http://stable:8080
+    weight: 9
+  - url: http://canary:8080
+    weight: 1
+```
+
+---
+
+## Load Balancing
+
+| Strategy | Behaviour |
+|---|---|
+| `ROUND_ROBIN` | Cycles through targets (lock-free AtomicInteger, per-route) |
+| `WEIGHTED` | Random selection proportional to `weight` |
+| `RANDOM` | Uniform random selection |
+
+---
+
+## Rate Limiting
+
+Uses Resilience4j's `RateLimiter`. When exceeded:
+```json
+HTTP 429  {"status": 429, "error": "Rate limit exceeded for route: my-service"}
+```
+
+---
+
+## Circuit Breaker
+
+Uses Resilience4j's `CircuitBreaker` (count-based sliding window). When open:
+```json
+HTTP 503  {"status": 503, "error": "Circuit breaker is OPEN for route: my-service"}
+```
+
+---
+
+## Caching
+
+Caffeine in-process cache for `GET` responses. Only 2xx responses are cached.
+Response header `X-Cache: HIT` / `X-Cache: MISS` indicates cache status.
+
+---
+
+## Header Management
+
+- **add-request** / **exclude-request**: Modify headers forwarded to the upstream.
+- **add-response** / **exclude-response**: Modify headers returned to the client.
+- **dedupe-response-headers**: Collapse duplicate values (e.g. `Access-Control-Allow-Origin`) into one comma-separated value.
+- **strip-prefix**: Remove a prefix from the path before forwarding.
+
+---
+
+## Request & Response Transformation
+
+Implement `RequestTransformer` or `ResponseTransformer` (both in the utilities module) and register them via `TransformGatewayFilter`. The default pass-through implementation does nothing.
+
+---
+
+## Tracing & Forwarded Headers
+
+| Header | Behaviour |
+|---|---|
+| `X-Request-ID` | Propagated or generated (UUID) per request |
+| `X-Trace-ID` | Propagated or generated (UUID) per request |
+| `X-Forwarded-For` | Client IP appended to any existing chain |
+| `X-Real-IP` | Set to the direct client IP |
+
+Both tracing headers are echoed in every response.
+
+---
+
+## Auditing
+
+Enable per route: `audit-enabled: true`. Records are written to:
+- **SLF4J** (`logs/audit.log` via Logback) — always
+- **Database** (`audit_logs` table) — when `audit-store: database`
+
+---
+
+## Authentication Header Forwarding
+
+```yaml
+auth-forward-headers:
+  - Authorization
+  - X-API-Key
+```
+
+These headers are forwarded verbatim to the upstream regardless of `exclude-request` rules.
+
+---
+
+## WebSocket Proxying
+
+Bidirectional WebSocket proxy via OkHttp. Any path matching a route's `path-pattern` is automatically eligible for WebSocket proxying — no additional configuration required.
+
+---
+
+## Dynamic Route Management (Admin API)
+
+| Method | Path | Description |
+|---|---|---|
+| `GET`    | `/gateway/admin/routes`           | List all routes |
+| `GET`    | `/gateway/admin/routes/{id}`      | Get a single route |
+| `POST`   | `/gateway/admin/routes`           | Create a route |
+| `PUT`    | `/gateway/admin/routes/{id}`      | Replace a route |
+| `DELETE` | `/gateway/admin/routes/{id}`      | Delete a route |
+| `PATCH`  | `/gateway/admin/routes/{id}/enable`  | Enable a route |
+| `PATCH`  | `/gateway/admin/routes/{id}/disable` | Disable a route |
+| `POST`   | `/gateway/admin/reload`           | Reload all routes from source |
+
+**Create example:**
+```bash
+curl -X POST http://localhost:8080/gateway/admin/routes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "New Service",
+    "path-pattern": "/api/new",
+    "routing-type": "PATH",
+    "strip-prefix": "/api/new",
+    "enabled": true,
+    "timeout-ms": 5000,
+    "load-balancer-type": "ROUND_ROBIN",
+    "targets": [{"url": "http://new-service:8080", "weight": 1}]
+  }'
+```
+
+---
+
+## Health Checks
+
+| Endpoint | Purpose | HTTP on success |
+|---|---|---|
+| `GET /gateway/health` | Combined status | `200` |
+| `GET /gateway/health/live` | Kubernetes liveness probe | Always `200` |
+| `GET /gateway/health/ready` | Kubernetes readiness probe | `200` when routes loaded |
+
+---
+
+## Database-Backed Routes
+
+```yaml
+gateway:
+  config-source: database
+  datasource:
+    type: postgres
+    url: "jdbc:postgresql://postgres:5432/gateway"
+    username: gateway
+    password: secret
+```
+
+Flyway migrations create the `routes` and `audit_logs` tables automatically.
+
+**Insert a route via SQL:**
+```sql
+INSERT INTO routes (id, name, config_json, enabled) VALUES (
+  'svc-1', 'My Service',
+  '{"id":"svc-1","name":"My Service","path-pattern":"/api/svc","routing-type":"PATH",
+    "strip-prefix":"/api/svc","enabled":true,"timeout-ms":5000,
+    "load-balancer-type":"ROUND_ROBIN","targets":[{"url":"http://svc:8080","weight":1}]}',
+  true
+);
+```
+
+After inserting, call `POST /gateway/admin/reload` or wait for the next scheduled refresh.
+
+---
+
+## Kubernetes Deployment
+
+Use **PostgreSQL** so all replicas share route state.
+
+```yaml
+# deployment.yaml (excerpt)
+containers:
+  - name: gateway
+    image: your-registry/javalin-gateway:latest
+    ports:
+      - containerPort: 8080
+    livenessProbe:
+      httpGet:
+        path: /gateway/health/live
+        port: 8080
+    readinessProbe:
+      httpGet:
+        path: /gateway/health/ready
+        port: 8080
+```
+
+For YAML-sourced routes in multi-instance deployments, mount `application.yml` as a Kubernetes ConfigMap volume; the gateway re-reads it every `refresh-interval-seconds`.
+
+---
+
+## Building & Running
+
+```bash
+# Run locally
+./gradlew :app:run
+
+# Run all tests
+./gradlew test
+
+# Module-specific tests
+./gradlew :utilities:test
+./gradlew :app:test
+
+# Build distribution ZIP
+./gradlew :app:installDist
+```
+
+---
+
+## Testing
+
+| Test class | Coverage |
+|---|---|
+| `PathRouteMatcherTest` | Path-prefix matching, edge cases |
+| `RoundRobinLoadBalancerTest` | Cycle, concurrency safety |
+| `DefaultFilterChainTest` | Ordering, short-circuit, exception propagation |
+| `YamlConfigLoaderTest` | YAML parsing, field mapping |
+| `RouteRegistryTest` | Add / update / remove / enable / disable |
+| `AdminControllerTest` | Admin REST API (JavalinTest) |
+| `HealthControllerTest` | Liveness / readiness probes (JavalinTest) |
+| `ProxyHandlerIntegrationTest` | End-to-end with MockWebServer |
+
+---
+
+## Module Structure
+
+```
+javalin-gateway/
+├── app/               # Main Javalin application
+│   └── org.example.gateway
+│       ├── GatewayApp           (entry point)
+│       ├── api/                 (AdminController, HealthController)
+│       ├── audit/               (AuditGatewayFilter)
+│       ├── config/              (GatewayConfig, YamlConfigLoader)
+│       ├── db/                  (DatabaseManager, RouteDao, AuditDao …)
+│       ├── proxy/               (ProxyHandler, WebSocketProxyHandler)
+│       └── registry/            (RouteRegistry, RouteLoader)
+│
+└── utilities/         # Reusable filter infrastructure (no app-layer deps)
+    └── org.example.utilities.gateway
+        ├── cache/               (CacheStore, CaffeineCache, CacheGatewayFilter)
+        ├── circuitbreaker/      (CircuitBreakerFactory, CircuitBreakerGatewayFilter)
+        ├── exception/           (GatewayException hierarchy)
+        ├── filter/              (GatewayFilter, FilterChain, FilterContext, DefaultFilterChain)
+        ├── header/              (HeaderMutationFilter, DedupeResponseHeadersFilter)
+        ├── loadbalancer/        (LoadBalancer, RoundRobin, Weighted, Random)
+        ├── model/               (RouteDefinition, TargetDefinition, policies …)
+        ├── proxy/               (OkHttpUpstreamClient, WebSocketForwarder, ProxyFilter …)
+        ├── ratelimit/           (SlidingWindowRateLimiter)
+        ├── routing/             (PathRouteMatcher, RegexRouteMatcher, HeaderRouteMatcher …)
+        ├── tracing/             (TracingFilter)
+        └── transform/           (RequestTransformer, ResponseTransformer, TransformGatewayFilter)
+```
+
+---
+
+## License
+
+Apache License 2.0 — see [LICENSE](LICENSE).

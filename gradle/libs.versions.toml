@@ -1,0 +1,58 @@
+# Dependency version catalog
+# https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
+
+[versions]
+commonstext       = "1.13.0"
+javalin           = "7.1.0"
+resilience4j      = "2.2.0"
+jackson           = "2.17.0"
+okhttp            = "4.12.0"
+jdbi              = "3.45.4"
+h2                = "2.2.224"
+postgresql        = "42.7.3"
+flyway            = "10.10.0"
+caffeine          = "3.1.8"
+logback           = "1.5.6"
+slf4j             = "2.0.13"
+mockito           = "5.12.0"
+
+[libraries]
+commons-text                  = { module = "org.apache.commons:commons-text",                              version.ref = "commonstext" }
+
+# Javalin
+javalin-bundle                = { module = "io.javalin:javalin-bundle",                                   version.ref = "javalin" }
+
+# Resilience4j
+resilience4j-circuitbreaker   = { module = "io.github.resilience4j:resilience4j-circuitbreaker",          version.ref = "resilience4j" }
+resilience4j-ratelimiter      = { module = "io.github.resilience4j:resilience4j-ratelimiter",             version.ref = "resilience4j" }
+
+# Jackson
+jackson-databind              = { module = "com.fasterxml.jackson.core:jackson-databind",                 version.ref = "jackson" }
+jackson-yaml                  = { module = "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml",    version.ref = "jackson" }
+
+# OkHttp
+okhttp                        = { module = "com.squareup.okhttp3:okhttp",                                 version.ref = "okhttp" }
+okhttp-mockwebserver          = { module = "com.squareup.okhttp3:mockwebserver",                          version.ref = "okhttp" }
+
+# JDBI
+jdbi-core                     = { module = "org.jdbi:jdbi3-core",                                         version.ref = "jdbi" }
+jdbi-sqlobject                = { module = "org.jdbi:jdbi3-sqlobject",                                    version.ref = "jdbi" }
+
+# Database drivers
+h2                            = { module = "com.h2database:h2",                                           version.ref = "h2" }
+postgresql                    = { module = "org.postgresql:postgresql",                                    version.ref = "postgresql" }
+
+# Flyway
+flyway-core                   = { module = "org.flywaydb:flyway-core",                                    version.ref = "flyway" }
+flyway-postgresql             = { module = "org.flywaydb:flyway-database-postgresql",                     version.ref = "flyway" }
+
+# Caffeine
+caffeine                      = { module = "com.github.ben-manes.caffeine:caffeine",                      version.ref = "caffeine" }
+
+# Logging
+logback-classic               = { module = "ch.qos.logback:logback-classic",                              version.ref = "logback" }
+slf4j-api                     = { module = "org.slf4j:slf4j-api",                                         version.ref = "slf4j" }
+
+# Testing
+mockito-core                  = { module = "org.mockito:mockito-core",                                    version.ref = "mockito" }
+mockito-junit                 = { module = "org.mockito:mockito-junit-jupiter",                           version.ref = "mockito" }
