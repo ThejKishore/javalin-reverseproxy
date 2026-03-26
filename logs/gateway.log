@@ -1,44 +1,286 @@
-2026-03-21 11:15:31.689 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
-2026-03-21 11:15:31.806 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
-2026-03-21 11:15:31.809 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
-2026-03-21 11:15:31.818 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-2026-03-21 11:15:31.819 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
-2026-03-21 11:15:31.822 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
-2026-03-21 11:15:31.837 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
-2026-03-21 11:15:31.841 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
-2026-03-21 11:15:31.849 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
-2026-03-21 11:15:31.855 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.004s)
-2026-03-21 11:15:31.885 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
-2026-03-21 11:15:31.887 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
-2026-03-21 11:15:31.887 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='http://localhost:9090', weight=1}]
-2026-03-21 11:15:31.887 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
-2026-03-21 11:15:32.041 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
-2026-03-21 11:16:32.046 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
-2026-03-21 11:16:32.047 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='http://localhost:9090', weight=1}]
-2026-03-21 11:16:32.048 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
-2026-03-21 11:17:32.043 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
-2026-03-21 11:17:32.045 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='http://localhost:9090', weight=1}]
-2026-03-21 11:17:32.045 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
-2026-03-21 11:18:24.508 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
-2026-03-21 11:18:25.192 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
-2026-03-21 11:18:25.348 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
-2026-03-21 11:18:25.353 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
-2026-03-21 11:18:25.364 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
-2026-03-21 11:18:25.366 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.007s)
-2026-03-21 11:18:25.369 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
-2026-03-21 11:18:25.388 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
-2026-03-21 11:18:25.394 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
-2026-03-21 11:18:25.402 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
-2026-03-21 11:18:25.409 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.005s)
-2026-03-21 11:18:25.446 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
-2026-03-21 11:18:25.448 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
-2026-03-21 11:18:25.449 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
-2026-03-21 11:18:25.449 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
-2026-03-21 11:18:25.650 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
-2026-03-21 11:19:25.656 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
-2026-03-21 11:19:25.657 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
-2026-03-21 11:19:25.657 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
-2026-03-21 11:20:25.655 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
-2026-03-21 11:20:25.656 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
-2026-03-21 11:20:25.656 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
-2026-03-21 11:20:58.886 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 20:04:55.151 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 20:04:55.267 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 20:04:55.270 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 20:04:55.278 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 20:04:55.279 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 20:04:55.283 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 20:04:55.299 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 20:04:55.302 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 20:04:55.311 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 20:04:55.316 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.003s)
+2026-03-25 20:04:55.345 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 20:04:55.346 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:04:55.347 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:04:55.347 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:04:55.513 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 20:05:55.519 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:05:55.520 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:05:55.520 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:06:55.519 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:06:55.519 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:06:55.520 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:07:55.519 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:07:55.519 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:07:55.520 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:08:55.516 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:08:55.517 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:08:55.518 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:08:58.658 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 20:26:31.568 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 20:26:31.679 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 20:26:31.683 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 20:26:31.692 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 20:26:31.693 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.006s)
+2026-03-25 20:26:31.697 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 20:26:31.712 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 20:26:31.716 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 20:26:31.724 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 20:26:31.730 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.003s)
+2026-03-25 20:26:31.759 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 20:26:31.760 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:26:31.761 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:26:31.761 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:26:31.890 [main] ERROR io.javalin.Javalin - Failed to start Javalin
+2026-03-25 20:27:13.961 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 20:27:14.073 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 20:27:14.076 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 20:27:14.085 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 20:27:14.086 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 20:27:14.090 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 20:27:14.105 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 20:27:14.109 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 20:27:14.117 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 20:27:14.124 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.004s)
+2026-03-25 20:27:14.152 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 20:27:14.153 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:27:14.154 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:27:14.154 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:27:14.363 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 20:28:14.369 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:28:14.369 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:28:14.369 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:29:14.371 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:29:14.373 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:29:14.374 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:29:32.147 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 20:37:48.763 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 20:37:48.875 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 20:37:48.879 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 20:37:48.887 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 20:37:48.888 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 20:37:48.891 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 20:37:48.906 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 20:37:48.910 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 20:37:48.919 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 20:37:48.924 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.004s)
+2026-03-25 20:37:48.952 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 20:37:48.953 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:37:48.954 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:37:48.954 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:37:49.149 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 20:38:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:38:49.156 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:38:49.156 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:39:49.153 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:39:49.154 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:39:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:40:49.154 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:40:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:40:49.156 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:41:49.152 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:41:49.153 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:41:49.154 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:42:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:42:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:42:49.156 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:43:49.154 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:43:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:43:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:44:49.153 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:44:49.154 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:44:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:45:49.153 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:45:49.154 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:45:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:46:49.154 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:46:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:46:49.155 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:47:02.816 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 20:47:04.010 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 20:47:04.121 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 20:47:04.124 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 20:47:04.132 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 20:47:04.133 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 20:47:04.136 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 20:47:04.150 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 20:47:04.154 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 20:47:04.162 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 20:47:04.167 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.004s)
+2026-03-25 20:47:04.196 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 20:47:04.198 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:47:04.198 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:47:04.198 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:47:04.344 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 20:48:04.350 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:48:04.351 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:48:04.352 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:48:38.003 [JettyServerThreadPool-46] INFO  o.e.gateway.registry.RouteRegistry - Route 'example-service' disabled
+2026-03-25 20:48:46.800 [JettyServerThreadPool-56] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:48:46.801 [JettyServerThreadPool-56] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 0 active routes
+2026-03-25 20:48:59.269 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 20:48:59.641 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 20:48:59.751 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 20:48:59.754 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 20:48:59.762 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 20:48:59.763 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 20:48:59.766 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 20:48:59.780 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 20:48:59.783 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 20:48:59.791 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 20:48:59.797 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.003s)
+2026-03-25 20:48:59.826 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 20:48:59.827 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:48:59.828 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:48:59.828 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:49:00.032 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 20:50:00.037 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:50:00.038 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:50:00.039 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:51:00.035 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:51:00.036 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:51:00.036 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active routes
+2026-03-25 20:51:49.467 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 20:56:51.536 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 20:56:51.652 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 20:56:51.655 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 20:56:51.664 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 20:56:51.665 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 20:56:51.668 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 20:56:51.683 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 20:56:51.686 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 20:56:51.695 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 20:56:51.700 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.003s)
+2026-03-25 20:56:51.729 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 20:56:51.731 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:56:51.731 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:56:51.732 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 20:56:51.878 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 20:57:29.423 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - Route 'example-service' disabled
+2026-03-25 20:57:30.466 [JettyServerThreadPool-57] INFO  o.e.gateway.registry.RouteRegistry - Route 'example-service' enabled
+2026-03-25 20:57:51.885 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:57:51.886 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:57:51.887 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 20:58:51.880 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:58:51.882 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:58:51.882 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 20:59:51.884 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 20:59:51.885 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 20:59:51.886 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:00:51.883 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:00:51.883 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:00:51.883 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:01:13.928 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 21:03:55.316 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 21:03:55.425 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 21:03:55.429 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 21:03:55.437 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 21:03:55.438 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 21:03:55.441 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 21:03:55.456 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 21:03:55.460 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 21:03:55.468 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 21:03:55.475 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.004s)
+2026-03-25 21:03:55.503 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 21:03:55.504 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:03:55.505 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:03:55.505 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:03:55.653 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 21:04:55.659 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:04:55.660 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:04:55.661 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:05:55.659 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:05:55.660 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:05:55.661 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:06:55.659 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:06:55.660 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:06:55.661 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:07:55.658 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:07:55.659 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:07:55.660 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:08:11.733 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 21:11:20.524 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 21:11:20.634 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 21:11:20.638 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 21:11:20.645 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 21:11:20.646 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 21:11:20.649 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 21:11:20.663 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 21:11:20.667 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 21:11:20.675 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 21:11:20.681 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.003s)
+2026-03-25 21:11:20.713 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 21:11:20.715 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:11:20.715 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:11:20.716 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:11:20.860 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 21:12:20.866 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:12:20.867 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:12:20.868 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:13:20.865 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:13:20.865 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:13:20.866 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:14:20.865 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:14:20.867 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:14:20.867 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:14:36.778 [JettyServerThreadPool-49] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:14:36.778 [JettyServerThreadPool-49] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:14:36.779 [JettyServerThreadPool-49] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:15:20.866 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:15:20.866 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:15:20.867 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:16:20.865 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:16:20.866 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:16:20.867 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:16:22.934 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
+2026-03-25 21:18:03.146 [main] INFO  o.example.gateway.db.DatabaseManager - Running Flyway migrations…
+2026-03-25 21:18:03.260 [main] INFO  org.flywaydb.core.FlywayExecutor - Database: jdbc:h2:mem:gateway (H2 2.2)
+2026-03-25 21:18:03.263 [main] WARN  o.f.c.i.database.base.Database - Flyway upgrade recommended: H2 2.2.224 is newer than this version of Flyway and support has not been tested. The latest supported version of H2 is 2.2.220.
+2026-03-25 21:18:03.272 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Schema history table "PUBLIC"."flyway_schema_history" does not exist yet
+2026-03-25 21:18:03.273 [main] INFO  o.f.core.internal.command.DbValidate - Successfully validated 2 migrations (execution time 00:00.005s)
+2026-03-25 21:18:03.276 [main] INFO  o.f.c.i.s.JdbcTableSchemaHistory - Creating Schema History table "PUBLIC"."flyway_schema_history" ...
+2026-03-25 21:18:03.291 [main] INFO  o.f.core.internal.command.DbMigrate - Current version of schema "PUBLIC": << Empty Schema >>
+2026-03-25 21:18:03.295 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "1 - create routes"
+2026-03-25 21:18:03.303 [main] INFO  o.f.core.internal.command.DbMigrate - Migrating schema "PUBLIC" to version "2 - create audit log"
+2026-03-25 21:18:03.309 [main] INFO  o.f.core.internal.command.DbMigrate - Successfully applied 2 migrations to schema "PUBLIC", now at version v2 (execution time 00:00.003s)
+2026-03-25 21:18:03.338 [main] INFO  o.example.gateway.db.DatabaseManager - Database initialised (type=h2)
+2026-03-25 21:18:03.339 [main] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:18:03.340 [main] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:18:03.341 [main] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:18:03.484 [main] INFO  org.example.gateway.GatewayApp - Javalin Gateway started on port 8080
+2026-03-25 21:19:03.490 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:19:03.491 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:19:03.492 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:19:24.909 [JettyServerThreadPool-46] INFO  o.e.gateway.registry.RouteRegistry - Route 'backend-lb' added/updated (active)
+2026-03-25 21:19:30.148 [JettyServerThreadPool-44] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:19:30.149 [JettyServerThreadPool-44] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:19:30.150 [JettyServerThreadPool-44] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:19:36.894 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:19:36.895 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:19:36.895 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:20:03.427 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:20:03.428 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:20:03.428 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:20:03.489 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:20:03.490 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:20:03.491 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:20:08.107 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - Route 'backend-lb' added/updated (active)
+2026-03-25 21:20:17.436 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:20:17.437 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:20:17.437 [JettyServerThreadPool-58] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:21:03.489 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:21:03.490 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:21:03.491 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:22:03.488 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading routes from application.yml (5 defined)
+2026-03-25 21:22:03.488 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
+2026-03-25 21:22:03.489 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-03-25 21:22:06.933 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped

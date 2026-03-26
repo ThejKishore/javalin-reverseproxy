@@ -51,12 +51,12 @@ public class AdminController {
     }
 
     public void listRoutes(Context ctx) {
-        ctx.json(registry.getRoutes());
+        ctx.json(registry.getAllRoutes());
     }
 
     public void getRoute(Context ctx) {
         String id = ctx.pathParam("id");
-        RouteDefinition route = registry.getRoutes().stream()
+        RouteDefinition route = registry.getAllRoutes().stream()
                 .filter(r -> r.getId().equals(id))
                 .findFirst()
                 .orElseThrow(() -> new NotFoundResponse("Route not found: " + id));
@@ -79,13 +79,18 @@ public class AdminController {
 
     public void updateRoute(Context ctx) throws Exception {
         String id = ctx.pathParam("id");
+        // Verify the route exists (in any state) before accepting the update
+        boolean exists = registry.getAllRoutes().stream().anyMatch(r -> r.getId().equals(id));
+        if (!exists && jdbi == null) {
+            throw new NotFoundResponse("Route not found: " + id);
+        }
         RouteDefinition route = parseBody(ctx);
         route.setId(id);
         if (jdbi != null) {
             String json = jsonMapper.writeValueAsString(route);
             int updated = jdbi.withExtension(RouteDao.class, dao ->
                     dao.update(id, route.getName(), json, route.isEnabled()));
-            if (updated == 0) throw new NotFoundResponse("Route not found: " + id);
+            if (updated == 0 && !exists) throw new NotFoundResponse("Route not found: " + id);
         }
         registry.addOrUpdate(route);
         ctx.json(route);

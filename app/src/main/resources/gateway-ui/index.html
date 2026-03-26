@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<!--
+  Licensed under the Apache License, Version 2.0
+  Gateway Admin Dashboard — Vue 3 (CDN, no build tools, no PrimeVue dependency)
+  Context path: /gateway/admin/ui  |  App logic: /gateway-ui/app.js
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gateway Admin</title>
+  <link rel="stylesheet" href="https://unpkg.com/primeicons/primeicons.css">
+  <style>
+    /* ─── Reset & base ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 14px; }
+    body {
+      background: #0f1117;
+      color: #e2e8f0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+    #app { min-height: 100vh; }
+
+    /* ─── Layout ────────────────────────────────────────────────────────── */
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+      padding: .85rem 1.5rem; position: sticky; top: 0; z-index: 20;
+      background: #0f1117; border-bottom: 1px solid #1e293b;
+    }
+    .brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; font-size: 1.05rem; }
+    .brand-sub { color: #94a3b8; font-size: .82rem; font-weight: 400; }
+    .header-right { display: flex; align-items: center; gap: .5rem; }
+    .shell { max-width: 1280px; margin: 0 auto; padding: 1rem 1.5rem 2.5rem; }
+
+    /* ─── Stats ──────────────────────────────────────────────────────────── */
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: .75rem; margin: 1rem 0; }
+    .stat-card { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: .85rem 1rem; }
+    .stat-value { font-size: 1.75rem; font-weight: 700; line-height: 1.1; }
+    .stat-label { color: #94a3b8; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; margin-top: .2rem; }
+
+    /* ─── Toolbar ────────────────────────────────────────────────────────── */
+    .toolbar {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .5rem;
+      background: #111827; border: 1px solid #1e293b; border-radius: 8px;
+      padding: .6rem 1rem; margin-bottom: 1rem;
+    }
+    .toolbar-start { display: flex; align-items: center; gap: .5rem; }
+    .toolbar-end   { display: flex; align-items: center; gap: .5rem; }
+    .search-wrap { position: relative; min-width: 260px; }
+    .search-wrap i { position: absolute; left: .65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+    .search-wrap input { padding-left: 2rem; width: 100%; }
+
+    /* ─── Buttons ────────────────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: .35rem;
+      padding: .42rem .85rem; border-radius: 6px; border: none;
+      font-size: .85rem; font-weight: 500; cursor: pointer;
+      transition: background .15s, opacity .15s; white-space: nowrap;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary   { background: #1d4ed8; color: #fff; }
+    .btn-primary:hover:not(:disabled)   { background: #2563eb; }
+    .btn-secondary { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+    .btn-secondary:hover:not(:disabled) { background: #334155; }
+    .btn-danger    { background: #7f1d1d; color: #fca5a5; }
+    .btn-danger:hover:not(:disabled)    { background: #991b1b; }
+    .btn-text      { background: transparent; color: #94a3b8; border: none; padding: .35rem .5rem; }
+    .btn-text:hover:not(:disabled)      { color: #e2e8f0; background: #1e293b; }
+    .btn-icon      { padding: .35rem .4rem; border-radius: 6px; }
+    .btn-sm        { padding: .28rem .6rem; font-size: .78rem; }
+    .btn i         { font-size: .9rem; }
+
+    /* ─── Form controls ───────────────────────────────────────────────────── */
+    .input, .f-select {
+      width: 100%; background: #0b1222; color: #e2e8f0;
+      border: 1px solid #334155; border-radius: 6px;
+      padding: .45rem .7rem; font-size: .85rem;
+      outline: none; transition: border-color .15s, box-shadow .15s;
+    }
+    .input:focus, .f-select:focus { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,.2); }
+    .input::placeholder { color: #475569; }
+    .f-select option { background: #0b1222; }
+
+    /* ─── Toggle switch ──────────────────────────────────────────────────── */
+    .toggle { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+    .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute; inset: 0; background: #334155; border-radius: 22px; cursor: pointer;
+      transition: background .2s;
+    }
+    .toggle-slider::before {
+      content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%;
+      background: #fff; left: 3px; top: 3px; transition: transform .2s;
+    }
+    .toggle input:checked + .toggle-slider { background: #38bdf8; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    /* ─── Tags ──────────────────────────────────────────────────────────── */
+    .tag {
+      display: inline-flex; align-items: center; padding: .18rem .55rem;
+      border-radius: 999px; font-size: .75rem; font-weight: 600; white-space: nowrap;
+    }
+    .tag-success   { background: #14532d; color: #86efac; }
+    .tag-danger    { background: #450a0a; color: #fca5a5; }
+    .tag-info      { background: #0c2a4a; color: #7dd3fc; }
+    .tag-warning   { background: #451a03; color: #fcd34d; }
+    .tag-secondary { background: #1e293b; color: #94a3b8; }
+    .tag-contrast  { background: #312e81; color: #c7d2fe; }
+
+    /* ─── Table ──────────────────────────────────────────────────────────── */
+    .table-wrap { background: #111827; border: 1px solid #1e293b; border-radius: 8px; overflow: hidden; }
+    .loading-bar { height: 3px; background: #1e293b; position: relative; overflow: hidden; }
+    .loading-bar::after {
+      content: ''; position: absolute; top: 0; left: -50%; width: 40%;
+      height: 100%; background: #38bdf8; border-radius: 2px;
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    @keyframes shimmer { 0% { left: -50%; } 100% { left: 110%; } }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: #0b1222; color: #94a3b8; font-size: .72rem;
+      text-transform: uppercase; letter-spacing: .05em;
+      padding: .65rem 1rem; text-align: left; border-bottom: 1px solid #1e293b;
+      white-space: nowrap; user-select: none;
+    }
+    thead th.sortable { cursor: pointer; }
+    thead th.sortable:hover { color: #e2e8f0; }
+    .sort-icon { margin-left: .3rem; opacity: .4; font-size: .7rem; }
+    thead th.sort-asc .sort-icon, thead th.sort-desc .sort-icon { opacity: 1; color: #38bdf8; }
+    tbody td { padding: .6rem 1rem; border-bottom: 1px solid #1e293b; color: #e2e8f0; font-size: .85rem; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #1a2234; }
+    .empty-hint { text-align: center; padding: 3rem 1rem; color: #94a3b8; }
+    .empty-hint i { font-size: 2.5rem; display: block; margin-bottom: .65rem; }
+
+    /* ─── Path/code mono ──────────────────────────────────────────────────── */
+    .path-mono {
+      font-family: ui-monospace, Menlo, Consolas, monospace;
+      background: #0b1222; padding: .18rem .45rem; border-radius: 4px;
+      color: #7dd3fc; font-size: .83rem; white-space: nowrap;
+    }
+    .targets-text { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .83rem; color: #cbd5e1; }
+
+    /* ─── Pagination ──────────────────────────────────────────────────────── */
+    .pagination {
+      display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: .35rem;
+      padding: .65rem 1rem; background: #0b1222; border-top: 1px solid #1e293b;
+    }
+    .pag-info { color: #94a3b8; font-size: .8rem; margin-right: .5rem; }
+    .per-page-select {
+      background: #0b1222; color: #94a3b8; border: 1px solid #1e293b;
+      border-radius: 5px; padding: .22rem .45rem; font-size: .8rem;
+    }
+    .page-btn {
+      min-width: 30px; height: 30px; border-radius: 5px; border: 1px solid #1e293b;
+      background: transparent; color: #94a3b8; cursor: pointer; font-size: .8rem;
+      display: inline-flex; align-items: center; justify-content: center; transition: background .12s;
+    }
+    .page-btn:hover:not(:disabled) { background: #1e293b; color: #e2e8f0; }
+    .page-btn.active { background: #1d4ed8; color: #fff; border-color: #1d4ed8; }
+    .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ─── Modal / Dialog ─────────────────────────────────────────────────── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; padding: 1rem;
+    }
+    .modal {
+      background: #111827; border: 1px solid #1e293b; border-radius: 12px;
+      width: 920px; max-width: 100%; max-height: 90vh;
+      display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.25rem; background: #0b1222;
+      border-bottom: 1px solid #1e293b; border-radius: 12px 12px 0 0;
+      font-weight: 600; font-size: 1rem;
+    }
+    .modal-body   { padding: 1.25rem; overflow-y: auto; flex: 1; }
+    .modal-footer {
+      padding: .75rem 1.25rem; background: #0b1222;
+      border-top: 1px solid #1e293b; border-radius: 0 0 12px 12px;
+      display: flex; justify-content: flex-end; gap: .5rem;
+    }
+
+    /* ─── Tabs ───────────────────────────────────────────────────────────── */
+    .tab-nav { display: flex; border-bottom: 1px solid #1e293b; margin-bottom: 1rem; gap: .1rem; }
+    .tab-nav-item {
+      padding: .55rem 1rem; font-size: .85rem; cursor: pointer; color: #94a3b8;
+      border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color .15s;
+    }
+    .tab-nav-item:hover { color: #e2e8f0; }
+    .tab-nav-item.active { color: #38bdf8; border-bottom-color: #38bdf8; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ─── Form layout ─────────────────────────────────────────────────────── */
+    .form-2col { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 1rem; }
+    .form-3col { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px,1fr)); gap: 1rem; }
+    .f-field   { display: flex; flex-direction: column; gap: .28rem; }
+    .f-label   { font-size: .77rem; font-weight: 600; color: #94a3b8; letter-spacing: .02em; }
+    .f-req     { color: #f87171; }
+    .toggle-row   { display: flex; align-items: center; gap: .55rem; }
+    .section-gap  { margin-bottom: 1.25rem; }
+    .mb-sm { margin-bottom: .5rem; }
+    .mt-sm { margin-top: .5rem; }
+    .w-full { width: 100%; }
+    hr.divider { border: none; border-top: 1px solid #1e293b; margin: 1rem 0; }
+
+    /* ─── Target & header rows ────────────────────────────────────────────── */
+    .target-grid {
+      display: grid; grid-template-columns: 1fr 100px auto; align-items: end; gap: .5rem;
+      background: #0b1222; border: 1px solid #1e293b; border-radius: 8px;
+      padding: .7rem; margin-bottom: .5rem;
+    }
+    .hdr-pair-row { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: .45rem; margin-bottom: .4rem; }
+    .inline-flex  { display: flex; align-items: center; gap: .45rem; }
+
+    /* ─── Chips ───────────────────────────────────────────────────────────── */
+    .chip {
+      display: inline-flex; align-items: center; gap: .25rem;
+      padding: .2rem .5rem; border: 1px solid #1e293b;
+      background: #0b1222; border-radius: 999px; font-size: .8rem; margin: .15rem;
+    }
+    .chip-remove { cursor: pointer; opacity: .7; font-size: .65rem; }
+    .chip-remove:hover { opacity: 1; }
+
+    /* ─── Toast notifications ────────────────────────────────────────────── */
+    .toast-container {
+      position: fixed; top: 1.2rem; right: 1.2rem; z-index: 200;
+      display: flex; flex-direction: column; gap: .5rem;
+      min-width: 280px; max-width: 380px;
+    }
+    .toast {
+      display: flex; align-items: flex-start; gap: .65rem;
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      padding: .75rem 1rem; box-shadow: 0 4px 20px rgba(0,0,0,.4);
+      animation: toastIn .2s ease;
+    }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+    .toast i.toast-icon { font-size: 1.1rem; margin-top: .1rem; flex-shrink: 0; }
+    .toast-body    { flex: 1; }
+    .toast-summary { font-weight: 600; font-size: .85rem; }
+    .toast-detail  { color: #94a3b8; font-size: .8rem; margin-top: .1rem; }
+    .toast-success .toast-icon { color: #4ade80; }
+    .toast-error   .toast-icon { color: #f87171; }
+    .toast-warn    .toast-icon { color: #fbbf24; }
+    .toast-info    .toast-icon { color: #38bdf8; }
+    .toast-close {
+      background: none; border: none; color: #94a3b8; cursor: pointer;
+      font-size: .9rem; padding: 0 0 0 .5rem;
+    }
+    .toast-close:hover { color: #e2e8f0; }
+
+    /* ─── Confirm dialog ─────────────────────────────────────────────────── */
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      display: flex; align-items: center; justify-content: center; z-index: 150;
+    }
+    .confirm-box {
+      background: #111827; border: 1px solid #1e293b; border-radius: 10px;
+      padding: 1.5rem; max-width: 420px; width: 90%;
+      box-shadow: 0 10px 40px rgba(0,0,0,.5);
+    }
+    .confirm-box h3 { font-size: 1rem; margin-bottom: .75rem; display: flex; align-items: center; gap: .5rem; }
+    .confirm-box p  { color: #94a3b8; font-size: .9rem; margin-bottom: 1.25rem; }
+    .confirm-actions { display: flex; justify-content: flex-end; gap: .5rem; }
+
+    /* ─── Policy card ─────────────────────────────────────────────────────── */
+    .policy-card { background: #0b1222; border: 1px solid #1e293b; border-radius: 8px; padding: .85rem; }
+
+    /* ─── Content layout: search bar + full-height table ────────────────── */
+    .content-layout {
+      display: flex; flex-direction: column; gap: .85rem;
+      height: calc(100vh - 320px);  /* account for header, stats, toolbar */
+    }
+
+    /* ─── Search bar ───────────────────────────────────────────────────── */
+    .search-bar {
+      background: #111827; border: 1px solid #1e293b; border-radius: 8px;
+      padding: .65rem 1rem; flex-shrink: 0;
+    }
+    .search-wrap { position: relative; max-width: 400px; }
+    .search-wrap i { position: absolute; left: .65rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+    .search-wrap input { padding-left: 2rem; width: 100%; }
+
+    /* ─── Table section (full height) ────────────────────────────────────── */
+    .table-section {
+      display: flex; flex-direction: column; flex: 1;
+      min-height: 0;  /* enable flex children to shrink below content size */
+    }
+    .table-wrap {
+      display: flex; flex-direction: column; flex: 1;
+      overflow: hidden;  /* contain scrolling to table only */
+    }
+    table {
+      flex: 1;
+    }
+    tbody {
+      overflow-y: auto; display: block;
+      max-height: calc(100% - 40px);  /* leave room for thead */
+    }
+    thead, tbody tr {
+      display: table; table-layout: fixed; width: 100%;
+    }
+
+    /* ─── Responsive design ─────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .shell { padding: .75rem 1rem 2rem; }
+      .content-layout { height: auto; }
+      .table-wrap {
+        height: calc(100vh - 250px);  /* adjust for mobile */
+      }
+      .search-wrap { max-width: 100%; }
+    }
+
+    /* Hide unrendered Vue templates until the app mounts */
+    [v-cloak] { display: none !important; }
+  </style>
+</head>
+<body>
+
+<div id="app" v-cloak>
+
+  <!-- ── Sticky header ── (inside #app so Vue can process bindings) ────── -->
+  <div class="app-header">
+    <div class="brand">
+      <i class="pi pi-server" style="color:#38bdf8;font-size:1.2rem"></i>
+      Gateway Admin
+      <span class="brand-sub">Route Management Console</span>
+    </div>
+    <div class="header-right">
+      <span :class="['tag', healthLabel === 'UP' ? 'tag-success' : 'tag-danger']">
+        <i :class="['pi', healthLabel === 'UP' ? 'pi-check-circle' : 'pi-times-circle']"
+           style="margin-right:.3rem;font-size:.85rem"></i>
+        {{ healthLabel }}
+      </span>
+      <button class="btn btn-text btn-icon" title="Reload data" @click="loadAll">
+        <i class="pi pi-refresh"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="shell">
+
+    <!-- ── Stats bar ────────────────────────────────────────────────────── -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value">{{ routes.length }}</div>
+        <div class="stat-label">Total Routes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#4ade80">{{ activeCount }}</div>
+        <div class="stat-label">Active</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" style="color:#fca5a5">{{ disabledCount }}</div>
+        <div class="stat-label">Disabled</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" :style="{ color: healthLabel === 'UP' ? '#4ade80' : '#fca5a5' }">{{ healthLabel }}</div>
+        <div class="stat-label">Health</div>
+      </div>
+    </div>
+
+    <!-- ── Toolbar (action buttons only) ───────────────────────────────────── -->
+    <div class="toolbar">
+      <div class="toolbar-start">
+        <button class="btn btn-primary" @click="openCreate">
+          <i class="pi pi-plus"></i> New Route
+        </button>
+        <button class="btn btn-secondary" @click="reloadGateway">
+          <i class="pi pi-sync"></i> Reload Gateway
+        </button>
+      </div>
+      <div class="toolbar-end" style="color:#94a3b8;font-size:.82rem">
+        <i class="pi pi-list" style="margin-right:.35rem"></i>
+        {{ filteredRoutes.length }} / {{ routes.length }} route(s)
+      </div>
+    </div>
+
+    <!-- ── Content layout: search bar + full-height table ─────────────── -->
+    <div class="content-layout">
+
+      <!-- ── Simple search bar ────────────────────────────────────────────── -->
+      <div class="search-bar">
+        <div class="search-wrap">
+          <i class="pi pi-search"></i>
+          <input type="text" v-model="search" placeholder="Search routes by name, path, or type…" class="input" />
+        </div>
+      </div>
+
+      <!-- ── Table section (full height) ──────────────────────────────── -->
+      <div class="table-section">
+        <!-- ── Routes table ──────────────────────────────────────────── -->
+        <div class="table-wrap">
+          <div v-if="loading" class="loading-bar"></div>
+          <table>
+            <thead>
+              <tr>
+                <th :class="['sortable', sortField==='name' ? (sortDir==='asc'?'sort-asc':'sort-desc') : '']"
+                    @click="sortBy('name')">
+                  Name<i :class="['pi sort-icon', sortField==='name' ? (sortDir==='asc'?'pi-sort-up-fill':'pi-sort-down-fill') : 'pi-sort']"></i>
+                </th>
+                <th :class="['sortable', sortField==='path-pattern' ? (sortDir==='asc'?'sort-asc':'sort-desc') : '']"
+                    @click="sortBy('path-pattern')">
+                  Path Pattern<i :class="['pi sort-icon', sortField==='path-pattern' ? (sortDir==='asc'?'pi-sort-up-fill':'pi-sort-down-fill') : 'pi-sort']"></i>
+                </th>
+                <th>Type</th>
+                <th>Targets</th>
+                <th>LB</th>
+                <th>Status</th>
+                <th>Timeout</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="!loading && pagedRoutes.length === 0">
+                <td colspan="8">
+                  <div class="empty-hint">
+                    <i class="pi pi-inbox"></i>
+                    {{ search ? 'No routes match your search.' : 'No routes configured yet.' }}
+                  </div>
+                </td>
+              </tr>
+              <tr v-for="r in pagedRoutes" :key="r.id">
+                <td>{{ r.name }}</td>
+                <td><span class="path-mono">{{ r['path-pattern'] }}</span></td>
+                <td>
+                  <span :class="['tag', routeTypeSeverity(r['routing-type'])]">{{ r['routing-type'] }}</span>
+                </td>
+                <td><span class="targets-text">{{ formatTargets(r.targets) }}</span></td>
+                <td>{{ shortLb(r['load-balancer-type']) }}</td>
+                <td>
+                  <span :class="['tag', r.enabled ? 'tag-success' : 'tag-danger']">
+                    {{ r.enabled ? 'ACTIVE' : 'DISABLED' }}
+                  </span>
+                </td>
+                <td>{{ r['timeout-ms'] || 5000 }} ms</td>
+                <td style="white-space:nowrap">
+                  <button class="btn btn-text btn-icon" title="Edit" @click="openEdit(r)">
+                    <i class="pi pi-pencil"></i>
+                  </button>
+                  <button class="btn btn-text btn-icon"
+                          :title="r.enabled ? 'Disable' : 'Enable'"
+                          @click="toggleRoute(r)">
+                    <i :class="r.enabled ? 'pi pi-pause' : 'pi pi-play'"
+                       :style="{ color: r.enabled ? '#fbbf24' : '#4ade80' }"></i>
+                  </button>
+                  <button class="btn btn-text btn-icon" title="Delete" @click="confirmDelete(r)">
+                    <i class="pi pi-trash" style="color:#f87171"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div class="pagination" v-if="filteredRoutes.length > 0">
+            <span class="pag-info">{{ paginationLabel }}</span>
+            <select class="per-page-select" v-model.number="pageSize" @change="currentPage=1">
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+            </select>
+            <button class="page-btn" :disabled="currentPage===1" @click="currentPage=1">
+              <i class="pi pi-angle-double-left"></i>
+            </button>
+            <button class="page-btn" :disabled="currentPage===1" @click="currentPage--">
+              <i class="pi pi-angle-left"></i>
+            </button>
+            <button v-for="p in visiblePages" :key="p"
+                    :class="['page-btn', p===currentPage ? 'active' : '']"
+                    @click="currentPage=p">{{ p }}</button>
+            <button class="page-btn" :disabled="currentPage===totalPages" @click="currentPage++">
+              <i class="pi pi-angle-right"></i>
+            </button>
+            <button class="page-btn" :disabled="currentPage===totalPages" @click="currentPage=totalPages">
+              <i class="pi pi-angle-double-right"></i>
+            </button>
+          </div>
+        </div><!-- /table-wrap -->
+      </div><!-- /table-section -->
+
+    </div><!-- /content-layout -->    <!-- ── Create / Edit Dialog ─────────────────────────────────────────── -->
+    <div v-if="dlgVisible" class="modal-overlay" @click.self="dlgVisible=false">
+      <div class="modal">
+        <div class="modal-header">
+          <span>{{ dlgMode === 'create' ? 'New Route' : 'Edit — ' + form.name }}</span>
+          <button class="btn btn-text btn-icon" @click="dlgVisible=false">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Tab navigation -->
+          <div class="tab-nav">
+            <div v-for="(tab, i) in ['Basic', 'Targets', 'Policies', 'Headers']"
+                 :key="tab"
+                 :class="['tab-nav-item', activeTab===i ? 'active' : '']"
+                 @click="activeTab=i">{{ tab }}</div>
+          </div>
+
+          <!-- Basic tab -->
+          <div :class="['tab-panel', activeTab===0 ? 'active' : '']">
+            <div class="form-2col section-gap">
+              <div class="f-field">
+                <label class="f-label">Name <span class="f-req">*</span></label>
+                <input type="text" v-model="form.name" placeholder="users-service" class="input" />
+              </div>
+              <div class="f-field">
+                <label class="f-label">Path Pattern <span class="f-req">*</span></label>
+                <input type="text" v-model="form['path-pattern']" placeholder="/api/users" class="input" />
+              </div>
+              <div class="f-field">
+                <label class="f-label">Routing Type</label>
+                <select v-model="form['routing-type']" class="f-select">
+                  <option v-for="o in rtOpts" :key="o.value" :value="o.value">{{ o.label }}</option>
+                </select>
+              </div>
+              <div class="f-field">
+                <label class="f-label">Load Balancer</label>
+                <select v-model="form['load-balancer-type']" class="f-select">
+                  <option v-for="o in lbOpts" :key="o.value" :value="o.value">{{ o.label }}</option>
+                </select>
+              </div>
+              <div class="f-field">
+                <label class="f-label">Strip Prefix</label>
+                <input type="text" v-model="form['strip-prefix']" placeholder="/api/v1" class="input" />
+              </div>
+              <div class="f-field">
+                <label class="f-label">Timeout (ms)</label>
+                <input type="number" v-model.number="form['timeout-ms']" min="100" max="300000" class="input" />
+              </div>
+            </div>
+            <div class="form-2col section-gap" v-if="form['routing-type'] === 'HEADER'">
+              <div class="f-field">
+                <label class="f-label">Header Match Name</label>
+                <input type="text" v-model="form['header-match-name']" class="input" />
+              </div>
+              <div class="f-field">
+                <label class="f-label">Header Match Value</label>
+                <input type="text" v-model="form['header-match-value']" class="input" />
+              </div>
+            </div>
+            <div class="toggle-row mt-sm">
+              <label class="toggle">
+                <input type="checkbox" v-model="form.enabled" />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="f-label" style="margin:0">Enabled</span>
+            </div>
+          </div>
+
+          <!-- Targets tab -->
+          <div :class="['tab-panel', activeTab===1 ? 'active' : '']">
+            <button class="btn btn-text mb-sm" @click="addTarget">
+              <i class="pi pi-plus"></i> Add Target
+            </button>
+            <div v-if="form.targets.length === 0" class="empty-hint" style="padding:1.5rem">
+              No targets added yet.
+            </div>
+            <div v-for="(t, i) in form.targets" :key="i" class="target-grid">
+              <div class="f-field">
+                <label class="f-label">URL</label>
+                <input type="text" v-model="t.url" placeholder="http://backend:8080" class="input" />
+              </div>
+              <div class="f-field">
+                <label class="f-label">Weight</label>
+                <input type="number" v-model.number="t.weight" min="1" max="100" class="input" />
+              </div>
+              <div style="padding-bottom:.12rem">
+                <button class="btn btn-text btn-icon" @click="removeTarget(i)">
+                  <i class="pi pi-times" style="color:#f87171"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Policies tab -->
+          <div :class="['tab-panel', activeTab===2 ? 'active' : '']">
+            <div class="form-2col">
+              <div class="policy-card">
+                <div class="toggle-row mb-sm">
+                  <label class="toggle">
+                    <input type="checkbox" v-model="form['rate-limit-policy'].enabled" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="f-label" style="margin:0">Rate Limit</span>
+                </div>
+                <div v-if="form['rate-limit-policy'].enabled" class="form-3col" style="gap:.5rem;margin-top:.5rem">
+                  <div class="f-field">
+                    <label class="f-label">Req / s</label>
+                    <input type="number" v-model.number="form['rate-limit-policy']['requests-per-second']" min="1" class="input" />
+                  </div>
+                  <div class="f-field">
+                    <label class="f-label">Burst</label>
+                    <input type="number" v-model.number="form['rate-limit-policy'].burst" min="0" class="input" />
+                  </div>
+                  <div class="f-field">
+                    <label class="f-label">Timeout ms</label>
+                    <input type="number" v-model.number="form['rate-limit-policy']['timeout-duration-ms']" min="0" class="input" />
+                  </div>
+                </div>
+              </div>
+              <div class="policy-card">
+                <div class="toggle-row mb-sm">
+                  <label class="toggle">
+                    <input type="checkbox" v-model="form['circuit-breaker-policy'].enabled" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="f-label" style="margin:0">Circuit Breaker</span>
+                </div>
+                <div v-if="form['circuit-breaker-policy'].enabled" class="form-3col" style="gap:.5rem;margin-top:.5rem">
+                  <div class="f-field">
+                    <label class="f-label">Failure %</label>
+                    <input type="number" v-model.number="form['circuit-breaker-policy']['failure-rate-threshold']" min="1" max="100" class="input" />
+                  </div>
+                  <div class="f-field">
+                    <label class="f-label">Wait (s)</label>
+                    <input type="number" v-model.number="form['circuit-breaker-policy']['wait-duration-seconds']" min="1" class="input" />
+                  </div>
+                  <div class="f-field">
+                    <label class="f-label">Window</label>
+                    <input type="number" v-model.number="form['circuit-breaker-policy']['sliding-window-size']" min="1" class="input" />
+                  </div>
+                </div>
+              </div>
+              <div class="policy-card">
+                <div class="toggle-row mb-sm">
+                  <label class="toggle">
+                    <input type="checkbox" v-model="form['cache-policy'].enabled" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="f-label" style="margin:0">Cache</span>
+                </div>
+                <div v-if="form['cache-policy'].enabled" class="form-2col" style="gap:.5rem;margin-top:.5rem">
+                  <div class="f-field">
+                    <label class="f-label">TTL (s)</label>
+                    <input type="number" v-model.number="form['cache-policy']['ttl-seconds']" min="1" class="input" />
+                  </div>
+                  <div class="f-field">
+                    <label class="f-label">Cache Key</label>
+                    <select v-model="form['cache-policy']['cache-key-strategy']" class="f-select">
+                      <option v-for="o in ckOpts" :key="o.value" :value="o.value">{{ o.label }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="policy-card">
+                <div class="toggle-row mb-sm">
+                  <label class="toggle">
+                    <input type="checkbox" v-model="form['audit-enabled']" />
+                    <span class="toggle-slider"></span>
+                  </label>
+                  <span class="f-label" style="margin:0">Audit</span>
+                </div>
+                <div v-if="form['audit-enabled']" class="f-field" style="margin-top:.5rem">
+                  <label class="f-label">Audit Store</label>
+                  <select v-model="form['audit-store']" class="f-select">
+                    <option v-for="o in auditOpts" :key="o.value" :value="o.value">{{ o.label }}</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Headers tab -->
+          <div :class="['tab-panel', activeTab===3 ? 'active' : '']">
+            <div class="form-2col section-gap">
+              <div>
+                <div class="toggle-row mb-sm">
+                  <span class="f-label" style="margin:0">Add Request Headers</span>
+                  <button class="btn btn-text btn-icon btn-sm" @click="addReqHdr">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                </div>
+                <div v-for="(e, i) in reqHdrEntries" :key="'rq'+i" class="hdr-pair-row">
+                  <input type="text" v-model="e.key" placeholder="X-Header" class="input" />
+                  <input type="text" v-model="e.value" placeholder="value" class="input" />
+                  <button class="btn btn-text btn-icon" @click="removeReqHdr(i)">
+                    <i class="pi pi-times" style="color:#f87171"></i>
+                  </button>
+                </div>
+              </div>
+              <div>
+                <div class="toggle-row mb-sm">
+                  <span class="f-label" style="margin:0">Add Response Headers</span>
+                  <button class="btn btn-text btn-icon btn-sm" @click="addRespHdr">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                </div>
+                <div v-for="(e, i) in respHdrEntries" :key="'rs'+i" class="hdr-pair-row">
+                  <input type="text" v-model="e.key" placeholder="X-Header" class="input" />
+                  <input type="text" v-model="e.value" placeholder="value" class="input" />
+                  <button class="btn btn-text btn-icon" @click="removeRespHdr(i)">
+                    <i class="pi pi-times" style="color:#f87171"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <hr class="divider">
+            <div class="form-2col section-gap">
+              <div>
+                <label class="f-label">Exclude Request Headers</label>
+                <div class="inline-flex mb-sm w-full">
+                  <input type="text" v-model="newExclReq" placeholder="Cookie" class="input"
+                         @keyup.enter="addExclReq" />
+                  <button class="btn btn-text btn-icon" @click="addExclReq">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                </div>
+                <span v-for="(h, i) in form['header-rules']['exclude-request']" :key="'er'+i" class="chip">
+                  {{ h }} <i class="pi pi-times chip-remove" @click="form['header-rules']['exclude-request'].splice(i,1)"></i>
+                </span>
+              </div>
+              <div>
+                <label class="f-label">Exclude Response Headers</label>
+                <div class="inline-flex mb-sm w-full">
+                  <input type="text" v-model="newExclResp" placeholder="Server" class="input"
+                         @keyup.enter="addExclResp" />
+                  <button class="btn btn-text btn-icon" @click="addExclResp">
+                    <i class="pi pi-plus"></i>
+                  </button>
+                </div>
+                <span v-for="(h, i) in form['header-rules']['exclude-response']" :key="'ers'+i" class="chip">
+                  {{ h }} <i class="pi pi-times chip-remove" @click="form['header-rules']['exclude-response'].splice(i,1)"></i>
+                </span>
+              </div>
+            </div>
+            <hr class="divider">
+            <div>
+              <label class="f-label">Auth Forward Headers</label>
+              <div class="inline-flex mb-sm" style="width:50%">
+                <input type="text" v-model="newAuth" placeholder="Authorization" class="input"
+                       @keyup.enter="addAuth" />
+                <button class="btn btn-text btn-icon" @click="addAuth">
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+              <br>
+              <span v-for="(h, i) in form['auth-forward-headers']" :key="'af'+i" class="chip">
+                {{ h }} <i class="pi pi-times chip-remove" @click="form['auth-forward-headers'].splice(i,1)"></i>
+              </span>
+            </div>
+          </div>
+
+        </div><!-- /modal-body -->
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" @click="dlgVisible=false">
+            <i class="pi pi-times"></i> Cancel
+          </button>
+          <button class="btn btn-primary" :disabled="saving" @click="saveRoute">
+            <i :class="saving ? 'pi pi-spinner pi-spin' : (dlgMode==='create' ? 'pi pi-plus' : 'pi pi-check')"></i>
+            {{ dlgMode === 'create' ? 'Create Route' : 'Save Changes' }}
+          </button>
+        </div>
+      </div><!-- /modal -->
+    </div><!-- /modal-overlay -->
+
+    <!-- ── Confirm dialog ────────────────────────────────────────────────── -->
+    <div v-if="confirmVisible" class="confirm-overlay">
+      <div class="confirm-box">
+        <h3>
+          <i class="pi pi-exclamation-triangle" style="color:#fbbf24"></i>
+          Confirm Delete
+        </h3>
+        <p>{{ confirmMsg }}</p>
+        <div class="confirm-actions">
+          <button class="btn btn-secondary" @click="confirmReject">Cancel</button>
+          <button class="btn btn-danger" @click="confirmAccept">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Toast notifications ───────────────────────────────────────────── -->
+    <div class="toast-container">
+      <div v-for="n in notifications" :key="n.id" :class="['toast', 'toast-' + n.severity]">
+        <i :class="[
+             'toast-icon pi',
+             n.severity === 'success' ? 'pi-check-circle' :
+             n.severity === 'error'   ? 'pi-times-circle' :
+             n.severity === 'warn'    ? 'pi-exclamation-triangle' : 'pi-info-circle'
+           ]"></i>
+        <div class="toast-body">
+          <div class="toast-summary">{{ n.summary }}</div>
+          <div v-if="n.detail" class="toast-detail">{{ n.detail }}</div>
+        </div>
+        <button class="toast-close" @click="dismissNotif(n.id)">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /shell -->
+</div><!-- /#app -->
+
+<!-- Vue 3 CDN — pure, no PrimeVue required -->
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="/gateway-ui/app.js"></script>
+</body>
+</html>
