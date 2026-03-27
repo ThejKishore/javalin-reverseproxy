@@ -2,7 +2,7 @@ gateway:
   port: 8080
 
   # Where to load routes from: "yaml" (this file) or "database"
-  config-source: yaml
+  config-source: database
 
   # How often routes are refreshed from the source (seconds)
   refresh-interval-seconds: 60

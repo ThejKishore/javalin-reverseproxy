@@ -81,6 +81,10 @@ public class GatewayApp {
                 path("/gateway/admin", () -> {
                     get("/ui", ui::serveUi);
                     post("/reload", admin::reload);
+                    get("/audit/logs", admin::getAuditLogs);
+                    path("/audit/routes/{routeId}", () -> {
+                        get(admin::getRouteAuditLogs);
+                    });
                     path("/routes", () -> {
                         get(admin::listRoutes);
                         post(admin::createRoute);

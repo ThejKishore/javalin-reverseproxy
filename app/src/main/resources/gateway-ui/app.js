@@ -114,6 +114,10 @@
         confirmMsg:       '',
         confirmCallback:  null,
 
+        // Audit logs
+        auditVisible:     false,
+        auditLogs:        [],
+
         // Options
         rtOpts: [
           { label: 'PATH',          value: 'PATH'          },
@@ -399,6 +403,38 @@
       confirmReject() {
         this.confirmVisible = false;
         this.confirmCallback = null;
+      },
+
+      /* ── Audit Logs ───────────────────────────────────────────────────── */
+      async openAuditLogs() {
+        this.auditLogs = [];
+        this.auditVisible = true;
+        await this.loadAuditLogs();
+      },
+
+      async loadAuditLogs() {
+        try {
+          const res = await fetch('/gateway/admin/audit/logs?limit=100');
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          this.auditLogs = data.logs || [];
+        } catch (e) {
+          this.notify('error', 'Load failed', 'Unable to fetch audit logs');
+        }
+      },
+
+      async refreshAuditLogs() {
+        await this.loadAuditLogs();
+        this.notify('success', 'Refreshed', 'Audit logs updated');
+      },
+
+      formatTime(isoString) {
+        if (!isoString) return '—';
+        const date = new Date(isoString);
+        return date.toLocaleString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
       },
     },
 

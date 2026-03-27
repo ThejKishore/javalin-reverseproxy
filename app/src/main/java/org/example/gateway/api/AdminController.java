@@ -12,8 +12,8 @@ import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import org.example.gateway.config.YamlConfigLoader;
+import org.example.gateway.db.AuditDao;
 import org.example.gateway.db.RouteDao;
-import org.example.gateway.db.RouteRow;
 import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
 import org.example.utilities.gateway.model.RouteDefinition;
@@ -116,6 +116,27 @@ public class AdminController {
     public void reload(Context ctx) {
         loader.load();
         ctx.json(Map.of("status", "reloaded", "routes", registry.getRoutes().size()));
+    }
+
+    public void getAuditLogs(Context ctx) {
+        if (jdbi == null) {
+            ctx.json(Map.of("logs", new java.util.ArrayList<>(), "total", 0));
+            return;
+        }
+        int limit = ctx.queryParamAsClass("limit", Integer.class).getOrDefault(100);
+        var logs = jdbi.withExtension(AuditDao.class, dao -> dao.findRecent(limit));
+        ctx.json(Map.of("logs", logs, "total", logs.size()));
+    }
+
+    public void getRouteAuditLogs(Context ctx) {
+        if (jdbi == null) {
+            ctx.json(Map.of("logs", new java.util.ArrayList<>(), "total", 0));
+            return;
+        }
+        String routeId = ctx.pathParam("routeId");
+        int limit = ctx.queryParamAsClass("limit", Integer.class).getOrDefault(50);
+        var logs = jdbi.withExtension(AuditDao.class, dao -> dao.findByRouteId(routeId, limit));
+        ctx.json(Map.of("logs", logs, "total", logs.size()));
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

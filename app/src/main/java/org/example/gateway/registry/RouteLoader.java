@@ -57,7 +57,7 @@ public class RouteLoader {
 
     private List<RouteDefinition> loadFromDatabase() {
         return jdbi.withExtension(RouteDao.class, dao -> {
-            List<RouteRow> rows = dao.findAllEnabled();
+            List<RouteRow> rows = dao.findAll();
             log.info("Loading {} route(s) from database", rows.size());
             List<RouteDefinition> defs = new ArrayList<>();
             for (RouteRow row : rows) {
