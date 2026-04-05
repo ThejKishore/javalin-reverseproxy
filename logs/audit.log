@@ -1,0 +1,7 @@
+AUDIT method=GET path=/api/example/todos route=Example Service upstream=https://jsonplaceholder.typicode.com/todos status=304 durationMs=444 requestId=117ba8a5-33b4-4c1c-8828-2dd07861df43
+AUDIT method=GET path=/api/example/todos route=Example Service upstream=https://jsonplaceholder.typicode.com/todos status=200 durationMs=525 requestId=9858a456-4b5f-4f48-a3dc-a945eede5768
+AUDIT method=GET path=/api/bin/get route=testHttpbin upstream=https://httpbin.org/get status=200 durationMs=7642 requestId=0d9ea5a3-4a0c-4849-8d6e-5053a6cc0590
+AUDIT method=GET path=/api/bin/get route=testHttpbin upstream=https://httpbin.org/get status=200 durationMs=449 requestId=852d5ac1-c3da-4877-99c2-1f280f0a3fe6
+AUDIT method=GET path=/api/bin/get route=testHttpbin upstream=https://httpbin.org/get status=200 durationMs=381 requestId=9ffb3680-b6fe-49f5-ab68-84bfc2901082
+AUDIT method=GET path=/api/bin/get route=testHttpbin upstream=https://httpbin.org/get status=200 durationMs=391 requestId=399d1ec5-67c7-4e03-af23-0bc66cd71b4b
+AUDIT method=GET path=/api/bin/get route=testHttpbin upstream=https://httpbin.org/get status=200 durationMs=176 requestId=7c76aae7-5222-4889-aabc-2be0e146ca46

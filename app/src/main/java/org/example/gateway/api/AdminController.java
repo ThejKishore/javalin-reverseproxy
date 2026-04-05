@@ -13,13 +13,18 @@ import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
 import org.example.gateway.config.YamlConfigLoader;
 import org.example.gateway.db.AuditDao;
+import org.example.gateway.db.ChangeLogDao;
+import org.example.gateway.db.ChangeLogRow;
 import org.example.gateway.db.RouteDao;
 import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
 import org.example.utilities.gateway.model.RouteDefinition;
 import org.jdbi.v3.core.Jdbi;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * REST controller for dynamic route management exposed under
@@ -38,6 +43,8 @@ import java.util.Map;
  * </table>
  */
 public class AdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     private final RouteRegistry registry;
     private final RouteLoader loader;
@@ -74,6 +81,8 @@ public class AdminController {
                     dao.insert(route.getId(), route.getName(), json, route.isEnabled()));
         }
         registry.addOrUpdate(route);
+        writeChangeLog("CREATE_ROUTE", route.getId(), route.getName(),
+                "Created route: " + route.getName() + " [" + route.getPathPattern() + "]", ctx.ip());
         ctx.status(201).json(route);
     }
 
@@ -93,15 +102,23 @@ public class AdminController {
             if (updated == 0 && !exists) throw new NotFoundResponse("Route not found: " + id);
         }
         registry.addOrUpdate(route);
+        writeChangeLog("UPDATE_ROUTE", route.getId(), route.getName(),
+                "Updated route: " + route.getName() + " [" + route.getPathPattern() + "]", ctx.ip());
         ctx.json(route);
     }
 
     public void deleteRoute(Context ctx) {
         String id = ctx.pathParam("id");
+        // Capture name before removing
+        String routeName = registry.getAllRoutes().stream()
+                .filter(r -> r.getId().equals(id))
+                .map(RouteDefinition::getName)
+                .findFirst().orElse(id);
         if (jdbi != null) {
             jdbi.useExtension(RouteDao.class, dao -> dao.deleteById(id));
         }
         registry.remove(id);
+        writeChangeLog("DELETE_ROUTE", id, routeName, "Deleted route: " + routeName, ctx.ip());
         ctx.status(204);
     }
 
@@ -115,6 +132,8 @@ public class AdminController {
 
     public void reload(Context ctx) {
         loader.load();
+        writeChangeLog("RELOAD_GATEWAY", null, null,
+                "Gateway reloaded — " + registry.getRoutes().size() + " routes active", ctx.ip());
         ctx.json(Map.of("status", "reloaded", "routes", registry.getRoutes().size()));
     }
 
@@ -139,15 +158,48 @@ public class AdminController {
         ctx.json(Map.of("logs", logs, "total", logs.size()));
     }
 
+    public void getChangeLogs(Context ctx) {
+        if (jdbi == null) {
+            ctx.json(Map.of("logs", new java.util.ArrayList<>(), "total", 0));
+            return;
+        }
+        int limit = ctx.queryParamAsClass("limit", Integer.class).getOrDefault(100);
+        var logs = jdbi.withExtension(ChangeLogDao.class, dao -> dao.findRecent(limit));
+        ctx.json(Map.of("logs", logs, "total", logs.size()));
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private void toggleRoute(Context ctx, boolean enabled) {
         String id = ctx.pathParam("id");
+        String routeName = registry.getAllRoutes().stream()
+                .filter(r -> r.getId().equals(id))
+                .map(RouteDefinition::getName)
+                .findFirst().orElse(id);
         if (jdbi != null) {
             jdbi.useExtension(RouteDao.class, dao -> dao.setEnabled(id, enabled));
         }
         registry.setEnabled(id, enabled);
+        writeChangeLog(enabled ? "ENABLE_ROUTE" : "DISABLE_ROUTE", id, routeName,
+                (enabled ? "Enabled" : "Disabled") + " route: " + routeName, ctx.ip());
         ctx.json(Map.of("id", id, "enabled", enabled));
+    }
+
+    private void writeChangeLog(String action, String routeId, String routeName, String details, String performedBy) {
+        if (jdbi == null) return;
+        try {
+            ChangeLogRow row = new ChangeLogRow();
+            row.setId(UUID.randomUUID().toString());
+            row.setAction(action);
+            row.setRouteId(routeId);
+            row.setRouteName(routeName);
+            row.setDetails(details);
+            row.setPerformedBy(performedBy);
+            jdbi.useExtension(ChangeLogDao.class, dao -> dao.insert(row));
+            log.info("CHANGE_LOG action={} route={} by={} details={}", action, routeName, performedBy, details);
+        } catch (Exception e) {
+            log.warn("Failed to write change log: {}", e.getMessage());
+        }
     }
 
     private RouteDefinition parseBody(Context ctx) {

@@ -10,7 +10,6 @@ package org.example.gateway;
 import io.javalin.Javalin;
 import org.example.gateway.api.AdminController;
 import org.example.gateway.api.HealthController;
-import org.example.gateway.api.UiController;
 import org.example.gateway.config.GatewayConfig;
 import org.example.gateway.config.YamlConfigLoader;
 import org.example.gateway.db.DatabaseManager;
@@ -60,7 +59,6 @@ public class GatewayApp {
         ProxyHandler proxyHandler = new ProxyHandler(registry, jdbi);
         AdminController admin = new AdminController(registry, loader, jdbi);
         HealthController health = new HealthController(registry);
-        UiController ui = new UiController();
 
         // ── Build Javalin app ─────────────────────────────────────────────────
         Javalin app = Javalin.create(cfg -> {
@@ -79,9 +77,9 @@ public class GatewayApp {
             // ── Admin API ─────────────────────────────────────────────────
             cfg.routes.apiBuilder(() ->
                 path("/gateway/admin", () -> {
-                    get("/ui", ui::serveUi);
                     post("/reload", admin::reload);
                     get("/audit/logs", admin::getAuditLogs);
+                    get("/change-logs", admin::getChangeLogs);
                     path("/audit/routes/{routeId}", () -> {
                         get(admin::getRouteAuditLogs);
                     });
@@ -98,11 +96,6 @@ public class GatewayApp {
                     });
                 })
             );
-
-            // ── UI static assets — MUST be before the catch-all proxy ─────────
-            // The catch-all /<path> would otherwise intercept /gateway-ui/app.js
-            // and other assets before the static-file handler can serve them.
-            cfg.routes.get("/gateway-ui/<path>", ui::serveAsset);
 
             // ── Catch-all HTTP proxy (all verbs, slash-spanning param) ─────────
             cfg.routes.get("/<path>",     proxyHandler::handle);
