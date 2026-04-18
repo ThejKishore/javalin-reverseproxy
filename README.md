@@ -9,6 +9,30 @@ A **production-ready, fully-featured API reverse proxy** built on
 
 ---
 
+## 📚 Documentation
+
+All supplementary docs live in the [`docs/`](./docs/) folder. Start here and follow the links:
+
+| Document | Description |
+|---|---|
+| [Quick Start Guide](./docs/QUICK_START.md) | How to run, access the UI, create routes, troubleshoot |
+| [Project Summary](./docs/PROJECT_SUMMARY.md) | High-level overview, goals, and scope |
+| [Implementation Details](./docs/README_IMPLEMENTATION.md) | Architecture, API endpoints, file structure, color palette |
+| [Completion Report](./docs/COMPLETION_REPORT.md) | Executive summary, requirements completed, QA results |
+| [UI Light Theme Changes](./docs/UI_LIGHT_THEME_CHANGES.md) | CSS changes, color palette reference |
+| [Light Theme Migration](./docs/LIGHT_THEME_MIGRATION.md) | Dark→light migration, component-by-component breakdown |
+| [UI Refactoring Summary](./docs/UI_REFACTORING_SUMMARY.md) | UI refactoring changes summary |
+| [Visual Comparison](./docs/VISUAL_COMPARISON.md) | Before/after visual comparisons |
+| [Verification Checklist](./docs/VERIFICATION_CHECKLIST.md) | Final verification and sign-off checklist |
+| [Audit Testing Guide](./docs/AUDIT_TESTING_GUIDE.md) | How to test audit functionality |
+| [Audit Checklist](./docs/AUDIT_COMPREHENSIVE_CHECKLIST.md) | Comprehensive audit checklist |
+| [Delivery Manifest](./docs/DELIVERY_MANIFEST.md) | Files delivered and their purpose |
+| [Implementation File Manifest](./docs/IMPLEMENTATION_FILE_MANIFEST.md) | All implementation files listed |
+| [UI Plan](./docs/ui-plan.md) | UI planning notes |
+| [UI Dashboard](./docs/ui-dashboard.md) | Dashboard design notes |
+
+---
+
 ## Table of Contents
 
 1. [Features](#features)
