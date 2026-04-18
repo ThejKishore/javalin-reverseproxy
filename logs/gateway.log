@@ -480,3 +480,4 @@
 2026-04-05 14:26:33.058 [gateway-refresh] INFO  o.e.gateway.registry.RouteLoader - Loading 5 route(s) from database
 2026-04-05 14:26:33.060 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - Registered route 'Example Service' [/api/example] → [TargetDefinition{url='https://jsonplaceholder.typicode.com', weight=1}]
 2026-04-05 14:26:33.060 [gateway-refresh] INFO  o.e.gateway.registry.RouteRegistry - RouteRegistry reloaded — 1 active route(s), 5 total
+2026-04-05 14:27:02.427 [Thread-10] INFO  org.example.gateway.GatewayApp - Gateway stopped
