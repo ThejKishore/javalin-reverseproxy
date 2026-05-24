@@ -9,8 +9,6 @@ plugins {
 }
 
 dependencies {
-    api(project(":list"))
-
     // Javalin — FilterContext wraps io.javalin.http.Context
     api(libs.javalin.bundle)
 

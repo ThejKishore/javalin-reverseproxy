@@ -1,0 +1,20 @@
+meta {
+  name: jsonholder
+  type: http
+  seq: 1
+}
+
+get {
+  url: http://localhost:8080/api/example/todos
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.aZrEJXuXqcQs-U2S3cWW1z_hXGXIae6MrAxg5zweOExiYbKe_Df0ctaN-DN7SgJxaXGcQ2Lcc-QClCEplULRSA
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
