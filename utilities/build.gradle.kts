@@ -30,6 +30,11 @@ dependencies {
     // Logging
     api(libs.slf4j.api)
 
+    // JWT validation (JwtAuthFilter)
+    api(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
+
     // Test
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit)

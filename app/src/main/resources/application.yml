@@ -13,6 +13,49 @@ gateway:
     username: sa
     password: ""
 
+  # ── Hazelcast — distributed CSRF token store ──────────────────────────────
+  hazelcast:
+    enabled: true                      # Set false to disable CSRF filter entirely
+    cluster-name: gateway-cluster
+    members: []                        # Empty = standalone; for K8s: ["hz-service:5701"]
+    csrf-map-ttl-seconds: 3600
+
+  # ── Global JWT policy — enforced on ALL routes unless overridden ──────────
+  # A route can opt-out by adding:  jwt-policy: { enabled: false }
+  # A route can use different credentials by specifying its own jwt-policy block.
+  jwt-policy:
+    enabled: true
+    algorithm: HS256                   # HS256 | HS384 | HS512 | RS256
+    # HS512 requires ≥ 64 bytes.  HS384 ≥ 48 bytes.  HS256 ≥ 32 bytes.
+    secret-or-public-key: "ul3lSRmvRtn1e5wePKyHA3EpjDCP60zUsjg7ZDsaO6WXqB8mN"
+    issuer: ""                         # Leave blank to skip issuer check
+    audience: ""                       # Leave blank to skip audience check
+    required-claims: {}                # e.g.  role: admin
+    exclude-paths:                     # Paths that bypass JWT (prefix match)
+      - /gateway/health
+      - /gateway/admin
+      - /api/example
+
+  # ── Global CSRF policy — enforced on ALL routes unless overridden ─────────
+  # A route can opt-out by adding:  csrf-policy: { enabled: false }
+  csrf-policy:
+    enabled: false                     # Set true to enforce CSRF globally
+    token-ttl-seconds: 3600
+    bind-to: IP                        # IP | SESSION
+    exclude-paths:                     # Paths exempt from CSRF (prefix match)
+      - /gateway/health
+      - /gateway/admin
+
+  # ── Global CSP policy — injected on ALL routes unless overridden ──────────
+  # A route can opt-out by adding:  csp-policy: { enabled: false }
+  csp-policy:
+    enabled: false                     # Set true to inject CSP headers globally
+    policy: "default-src 'self'"
+    report-only: false                 # true = Content-Security-Policy-Report-Only
+    exclude-paths:                     # Paths exempt from CSP injection (prefix match)
+      - /gateway/health
+      - /gateway/admin
+
   routes:
     - id: example-service
       name: Example Service
@@ -56,6 +99,23 @@ gateway:
         - X-API-Key
       audit-enabled: false
       audit-store: database
+
+      # ── Security filters (all optional, per-route) ───────────────────────
+      # All three policies (JWT, CSRF, CSP) are inherited from the global blocks above.
+      # To disable a policy for this route only:
+      #   jwt-policy:  { enabled: false }
+      #   csrf-policy: { enabled: false }
+      #   csp-policy:  { enabled: false }
+      # To use route-specific settings, specify the full policy block here.
+
+      # HTTP Input Validation — blacklist ESAPI patterns (loaded from DB)
+      http-validation-policy:
+        enabled: false
+        validate-query-params: true
+        validate-headers: true
+        validate-cookies: true
+        validate-body: false           # Reads body into memory — disable for large uploads
+        exclude-paths: []
 
     # ── Example: Load-balanced backend with circuit breaker ─────────────────
     - id: backend-lb

@@ -12,6 +12,9 @@ import org.example.gateway.config.GatewayConfig;
 import org.example.gateway.config.YamlConfigLoader;
 import org.example.gateway.db.RouteDao;
 import org.example.gateway.db.RouteRow;
+import org.example.utilities.gateway.model.CspPolicy;
+import org.example.utilities.gateway.model.CsrfPolicy;
+import org.example.utilities.gateway.model.JwtPolicy;
 import org.example.utilities.gateway.model.RouteDefinition;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
@@ -41,10 +44,45 @@ public class RouteLoader {
 
     /** Loads routes and pushes them into the registry. */
     public void load() {
+        // Re-read YAML on every load so that changes to the global jwt-policy
+        // (e.g. exclude-paths) take effect without a server restart.
+        refreshGlobalJwtPolicy();
+
         List<RouteDefinition> routes = "database".equalsIgnoreCase(config.getConfigSource())
                 ? loadFromDatabase()
                 : loadFromYaml();
         registry.reload(routes);
+    }
+
+    /**
+     * Re-reads {@code application.yml} and pushes updated global security policies
+     * (JWT, CSRF, CSP) into the registry.  Silently skips on parse errors so a
+     * single bad YAML edit cannot disable the gateway.
+     */
+    private void refreshGlobalJwtPolicy() {
+        try {
+            GatewayConfig fresh = new YamlConfigLoader().load();
+
+            JwtPolicy freshJwt = fresh.getJwtPolicy();
+            registry.setGlobalJwtPolicy(freshJwt);
+            if (freshJwt != null && freshJwt.isEnabled()) {
+                log.debug("Global JWT policy refreshed — excludePaths={}", freshJwt.getExcludePaths());
+            }
+
+            CsrfPolicy freshCsrf = fresh.getCsrfPolicy();
+            registry.setGlobalCsrfPolicy(freshCsrf);
+            if (freshCsrf != null && freshCsrf.isEnabled()) {
+                log.debug("Global CSRF policy refreshed — excludePaths={}", freshCsrf.getExcludePaths());
+            }
+
+            CspPolicy freshCsp = fresh.getCspPolicy();
+            registry.setGlobalCspPolicy(freshCsp);
+            if (freshCsp != null && freshCsp.isEnabled()) {
+                log.debug("Global CSP policy refreshed — policy='{}'", freshCsp.getPolicy());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to refresh global security policies from YAML — keeping previous: {}", e.getMessage());
+        }
     }
 
     // ── Source implementations ────────────────────────────────────────────────

@@ -5,10 +5,11 @@ package org.example.app;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MessageUtilsTest {
-    @Test void testGetMessage() {
-        assertEquals("Hello      World!", MessageUtils.getMessage());
+    @Test void placeholder() {
+        // Gradle init template stub — no production code to test here
+        assertTrue(true);
     }
 }

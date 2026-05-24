@@ -29,10 +29,26 @@ dependencies {
     // Logback — SLF4J implementation
     implementation(libs.logback.classic)
 
+    // JWT validation
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
+
+    // Hazelcast — distributed CSRF token store
+    // Exclude the old Servlet API stub that conflicts with Jetty 12
+    implementation(libs.hazelcast) {
+        exclude(group = "org.eclipse.jetty.toolchain", module = "jetty-jakarta-servlet-api")
+        exclude(group = "jakarta.servlet", module = "jakarta.servlet-api")
+    }
+
+    // OWASP ESAPI — HTTP input blacklist validation
+    implementation(libs.esapi)
+
     // Test
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit)
+    testImplementation(libs.assertj.core)
     testImplementation(libs.h2)
 }
 

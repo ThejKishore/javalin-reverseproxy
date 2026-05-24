@@ -54,7 +54,7 @@ class ProxyHandlerIntegrationTest {
         ProxyHandler handler = new ProxyHandler(registry, null);
 
         return Javalin.create(cfg ->
-                cfg.router.apiBuilder(() -> {
+                cfg.routes.apiBuilder(() -> {
                     io.javalin.apibuilder.ApiBuilder.get("/<path>", handler::handle);
                     io.javalin.apibuilder.ApiBuilder.post("/<path>", handler::handle);
                     io.javalin.apibuilder.ApiBuilder.get("/", handler::handle);

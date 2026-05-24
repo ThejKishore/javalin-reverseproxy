@@ -85,6 +85,22 @@ public class RouteDefinition {
     @JsonProperty("header-match-value")
     private String headerMatchValue;
 
+    /** JWT authentication policy (optional, per-route). */
+    @JsonProperty("jwt-policy")
+    private JwtPolicy jwtPolicy;
+
+    /** CSRF protection policy (optional, per-route). */
+    @JsonProperty("csrf-policy")
+    private CsrfPolicy csrfPolicy;
+
+    /** Content Security Policy (optional, per-route). */
+    @JsonProperty("csp-policy")
+    private CspPolicy cspPolicy;
+
+    /** HTTP input validation policy using OWASP ESAPI (optional, per-route). */
+    @JsonProperty("http-validation-policy")
+    private HttpValidationPolicy httpValidationPolicy;
+
     // --- Getters & setters ---
 
     public String getId() { return id; }
@@ -140,6 +156,18 @@ public class RouteDefinition {
 
     public String getHeaderMatchValue() { return headerMatchValue; }
     public void setHeaderMatchValue(String headerMatchValue) { this.headerMatchValue = headerMatchValue; }
+
+    public JwtPolicy getJwtPolicy() { return jwtPolicy; }
+    public void setJwtPolicy(JwtPolicy jwtPolicy) { this.jwtPolicy = jwtPolicy; }
+
+    public CsrfPolicy getCsrfPolicy() { return csrfPolicy; }
+    public void setCsrfPolicy(CsrfPolicy csrfPolicy) { this.csrfPolicy = csrfPolicy; }
+
+    public CspPolicy getCspPolicy() { return cspPolicy; }
+    public void setCspPolicy(CspPolicy cspPolicy) { this.cspPolicy = cspPolicy; }
+
+    public HttpValidationPolicy getHttpValidationPolicy() { return httpValidationPolicy; }
+    public void setHttpValidationPolicy(HttpValidationPolicy httpValidationPolicy) { this.httpValidationPolicy = httpValidationPolicy; }
 
     @Override
     public String toString() {

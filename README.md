@@ -49,14 +49,16 @@ All supplementary docs live in the [`docs/`](./docs/) folder. Start here and fol
 12. [Tracing & Forwarded Headers](#tracing--forwarded-headers)
 13. [Auditing](#auditing)
 14. [Authentication Header Forwarding](#authentication-header-forwarding)
-15. [WebSocket Proxying](#websocket-proxying)
-16. [Dynamic Route Management (Admin API)](#dynamic-route-management-admin-api)
-17. [Health Checks](#health-checks)
-18. [Database-Backed Routes](#database-backed-routes)
-19. [Kubernetes Deployment](#kubernetes-deployment)
-20. [Building & Running](#building--running)
-21. [Testing](#testing)
-22. [Module Structure](#module-structure)
+15. [Security Filters](#security-filters)
+16. [WebSocket Proxying](#websocket-proxying)
+17. [Dynamic Route Management (Admin API)](#dynamic-route-management-admin-api)
+18. [Security Validation Rules API](#security-validation-rules-api)
+19. [Health Checks](#health-checks)
+20. [Database-Backed Routes](#database-backed-routes)
+21. [Kubernetes Deployment](#kubernetes-deployment)
+22. [Building & Running](#building--running)
+23. [Testing](#testing)
+24. [Module Structure](#module-structure)
 
 ---
 
@@ -76,6 +78,7 @@ All supplementary docs live in the [`docs/`](./docs/) folder. Start here and fol
 | **Tracing** | Propagates / generates `X-Request-ID` and `X-Trace-ID` |
 | **Forwarded-For** | Injects `X-Forwarded-For` and `X-Real-IP` |
 | **Auth Forwarding** | Configurable list of auth headers forwarded verbatim |
+| **Security Filters** | Optional per-route JWT, CSRF, CSP, and HTTP input blacklist validation |
 | **Auditing** | Records request/response metadata to database or log file |
 | **WebSocket** | Full bidirectional WebSocket proxying via OkHttp |
 | **HTTP/2 & HTTPS** | Transparent via OkHttp — no extra configuration needed |
@@ -106,14 +109,18 @@ Client
                 │
                 ▼
    ┌────────── Filter Chain ────────────────────────────────────────┐
-   │  TracingFilter          (inject X-Request-ID, X-Trace-ID)      │
+   │  JwtAuthFilter         (optional, per-route)                    │
+   │  CsrfGatewayFilter     (optional, unsafe methods only)          │
+   │  TracingFilter         (inject X-Request-ID, X-Trace-ID)        │
    │  SlidingWindowRateLimiter  (optional, per-route)               │
    │  CircuitBreakerGatewayFilter  (optional, per-route)            │
    │  CacheGatewayFilter     (optional, GET only)                   │
    │  ForwardedForFilter     (X-Forwarded-For / X-Real-IP)          │
+   │  HttpValidationFilter   (optional blacklist validation)         │
    │  HeaderMutationFilter   (add/exclude request & response hdrs)  │
    │  TransformGatewayFilter (pluggable body transforms)            │
    │  DedupeResponseHeadersFilter  (optional)                       │
+   │  CspGatewayFilter       (optional CSP response header)          │
    │  ProxyFilter            ← terminal: LoadBalancer + OkHttp      │
    └────────────────────────────────────────────────────────────────┘
                 │
@@ -220,6 +227,35 @@ gateway:
 
       audit-enabled: true
       audit-store: database       # "database" or "file"
+
+      jwt-policy:
+        enabled: false
+        algorithm: HS256
+        secret-or-public-key: "change-me-minimum-32-chars-secret!!"
+        issuer: ""
+        audience: ""
+        required-claims: {}
+        exclude-paths: []
+
+      csrf-policy:
+        enabled: false
+        token-ttl-seconds: 3600
+        bind-to: IP                # IP | SESSION
+        exclude-paths: []
+
+      csp-policy:
+        enabled: false
+        policy: "default-src 'self'"
+        report-only: false
+        exclude-paths: []
+
+      http-validation-policy:
+        enabled: false
+        validate-query-params: true
+        validate-headers: true
+        validate-cookies: true
+        validate-body: false
+        exclude-paths: []
 ```
 
 ---
@@ -346,6 +382,21 @@ These headers are forwarded verbatim to the upstream regardless of `exclude-requ
 
 ---
 
+## Security Filters
+
+All security filters are optional and route-scoped.
+
+| Filter | Purpose | Failure Status |
+|---|---|---|
+| `JwtAuthFilter` | Validates Bearer JWT token and required claims | `401` / `403` |
+| `CsrfGatewayFilter` | Enforces CSRF token on unsafe methods (`POST`,`PUT`,`DELETE`,`PATCH`) | `403` |
+| `HttpValidationFilter` | Validates query/header/cookie/body against blacklist regex rules | `400` |
+| `CspGatewayFilter` | Injects `Content-Security-Policy` (or report-only variant) on response | N/A (header injection) |
+
+CSRF tokens are stored via distributed `CsrfTokenStore` (Hazelcast implementation in `app`).
+
+---
+
 ## WebSocket Proxying
 
 Bidirectional WebSocket proxy via OkHttp. Any path matching a route's `path-pattern` is automatically eligible for WebSocket proxying — no additional configuration required.
@@ -379,6 +430,31 @@ curl -X POST http://localhost:8080/gateway/admin/routes \
     "load-balancer-type": "ROUND_ROBIN",
     "targets": [{"url": "http://new-service:8080", "weight": 1}]
   }'
+```
+
+---
+
+## Security Validation Rules API
+
+Dynamic blacklist rule management endpoints:
+
+| Method | Path | Description |
+|---|---|---|
+| `GET`    | `/gateway/admin/security/rules` | List all rules |
+| `POST`   | `/gateway/admin/security/rules` | Create a new rule |
+| `POST`   | `/gateway/admin/security/rules/reload` | Reload in-memory rules from DB |
+| `PATCH`  | `/gateway/admin/security/rules/{id}/enable` | Enable a rule |
+| `PATCH`  | `/gateway/admin/security/rules/{id}/disable` | Disable a rule |
+| `DELETE` | `/gateway/admin/security/rules/{id}` | Delete a rule |
+
+Example create payload:
+```json
+{
+  "name": "XSS script tag",
+  "pattern": "(?i)<script",
+  "target": "ALL",
+  "enabled": true
+}
 ```
 
 ---

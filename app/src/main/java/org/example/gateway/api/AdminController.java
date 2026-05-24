@@ -16,8 +16,10 @@ import org.example.gateway.db.AuditDao;
 import org.example.gateway.db.ChangeLogDao;
 import org.example.gateway.db.ChangeLogRow;
 import org.example.gateway.db.RouteDao;
+import org.example.gateway.db.ValidationRuleDao;
 import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
+import org.example.gateway.security.ValidationRuleStore;
 import org.example.utilities.gateway.model.RouteDefinition;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
@@ -50,11 +52,18 @@ public class AdminController {
     private final RouteLoader loader;
     private final Jdbi jdbi;
     private final ObjectMapper jsonMapper = YamlConfigLoader.jsonMapper();
+    private final ValidationRuleStore validationRuleStore;
 
     public AdminController(RouteRegistry registry, RouteLoader loader, Jdbi jdbi) {
+        this(registry, loader, jdbi, null);
+    }
+
+    public AdminController(RouteRegistry registry, RouteLoader loader, Jdbi jdbi,
+                           ValidationRuleStore validationRuleStore) {
         this.registry = registry;
         this.loader = loader;
         this.jdbi = jdbi;
+        this.validationRuleStore = validationRuleStore;
     }
 
     public void listRoutes(Context ctx) {
@@ -168,7 +177,74 @@ public class AdminController {
         ctx.json(Map.of("logs", logs, "total", logs.size()));
     }
 
+    // ── Security: Validation rules ────────────────────────────────────────────
+
+    /// Lists all validation rules (enabled and disabled).
+    public void listValidationRules(Context ctx) {
+        if (jdbi == null) { ctx.json(Map.of("rules", java.util.List.of())); return; }
+        var rules = jdbi.withExtension(ValidationRuleDao.class, ValidationRuleDao::findAll);
+        ctx.json(Map.of("rules", rules, "total", rules.size()));
+    }
+
+    /// Creates a new validation rule.
+    public void createValidationRule(Context ctx) {
+        if (jdbi == null) throw new BadRequestResponse("Database not configured");
+        var body = ctx.bodyAsClass(java.util.Map.class);
+        String id      = UUID.randomUUID().toString();
+        String name    = (String) body.get("name");
+        String pattern = (String) body.get("pattern");
+        String target  = body.getOrDefault("target", "ALL").toString();
+        boolean enabled = body.containsKey("enabled")
+                ? Boolean.parseBoolean(body.get("enabled").toString()) : true;
+
+        if (name == null || pattern == null) throw new BadRequestResponse("'name' and 'pattern' are required");
+
+        jdbi.useExtension(ValidationRuleDao.class, dao -> dao.insert(id, name, pattern, target, enabled));
+        if (validationRuleStore != null) validationRuleStore.reload();
+        writeChangeLog("CREATE_VALIDATION_RULE", id, name, "Created rule: " + name, ctx.ip());
+        ctx.status(201).json(Map.of("id", id, "name", name, "pattern", pattern, "target", target, "enabled", enabled));
+    }
+
+    /// Reloads all enabled validation rules from the database into the in-memory store.
+    public void reloadValidationRules(Context ctx) {
+        if (validationRuleStore != null) validationRuleStore.reload();
+        int count = validationRuleStore != null ? validationRuleStore.getRules().size() : 0;
+        writeChangeLog("RELOAD_VALIDATION_RULES", null, null,
+                "Reloaded " + count + " validation rule(s)", ctx.ip());
+        ctx.json(Map.of("status", "reloaded", "rules", count));
+    }
+
+    /// Enables a validation rule by ID.
+    public void enableValidationRule(Context ctx) {
+        toggleValidationRule(ctx, true);
+    }
+
+    /// Disables a validation rule by ID.
+    public void disableValidationRule(Context ctx) {
+        toggleValidationRule(ctx, false);
+    }
+
+    /// Deletes a validation rule by ID.
+    public void deleteValidationRule(Context ctx) {
+        if (jdbi == null) throw new BadRequestResponse("Database not configured");
+        String id = ctx.pathParam("id");
+        jdbi.useExtension(ValidationRuleDao.class, dao -> dao.deleteById(id));
+        if (validationRuleStore != null) validationRuleStore.reload();
+        writeChangeLog("DELETE_VALIDATION_RULE", id, null, "Deleted validation rule: " + id, ctx.ip());
+        ctx.status(204);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private void toggleValidationRule(Context ctx, boolean enabled) {
+        if (jdbi == null) throw new BadRequestResponse("Database not configured");
+        String id = ctx.pathParam("id");
+        jdbi.useExtension(ValidationRuleDao.class, dao -> dao.setEnabled(id, enabled));
+        if (validationRuleStore != null) validationRuleStore.reload();
+        writeChangeLog(enabled ? "ENABLE_VALIDATION_RULE" : "DISABLE_VALIDATION_RULE",
+                id, null, (enabled ? "Enabled" : "Disabled") + " validation rule: " + id, ctx.ip());
+        ctx.json(Map.of("id", id, "enabled", enabled));
+    }
 
     private void toggleRoute(Context ctx, boolean enabled) {
         String id = ctx.pathParam("id");

@@ -1,7 +1,119 @@
 ---
-description: Javalin 7.1.0 web framework conventions and API patterns
+description: Javalin Gateway - Production-ready reverse proxy on Javalin 7.1.0 and Java 21
 globs: "*.java,*.kt"
 ---
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║        KIRO-LITE MEMORY BANK & FEATURE DEVELOPMENT           ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+## 📚 Memory Bank (Persistent Project Context)
+
+All project context is stored in `/memory-bank/` for AI-assisted, structured development.
+
+### 🚀 Before Starting ANY Task
+**Read these files in order** (takes ~5 min):
+1. **projectbrief.md** — Project identity & mission
+2. **productContext.md** — Business goals & user stories  
+3. **systemPatterns.md** — Architecture patterns & design decisions
+4. **techContext.md** — Tech stack, file locations, schema
+5. **activeContext.md** — Current state, common pitfalls, code locations
+6. **progress.md** — Completed work & roadmap
+7. **copilot-rules.md** — Coding standards & best practices
+
+### 🎯 Kiro-Lite Workflow for New Features
+
+Follow this command sequence when building a new feature:
+
+**Step 1: Initialize**
+```
+/start feature <feature-name>
+```
+Creates feature folder with PRD template.
+
+**Step 2: Design Phase**
+```
+/approve prd
+```
+After PRD clarification, generates architecture & design decisions.
+
+**Step 3: Task Breakdown**
+```
+/approve design
+```
+After design review, generates atomic task units (S/M/L effort).
+
+**Step 4: Implementation**
+```
+/approve tasks
+```
+Then implement one task at a time:
+```
+/implement <TASK_ID>
+```
+Show diffs, finish with `/review complete`, repeat for next task.
+
+**Step 5: Update Memory**
+```
+/update memory bank
+```
+Refresh memory files with learnings.
+
+### 📖 Memory Bank Reference
+
+| File | Purpose |
+|---|---|
+| **projectbrief.md** | Project identity, mission, scope, success metrics |
+| **productContext.md** | Business goals, user stories, market positioning |
+| **systemPatterns.md** | Architecture patterns (filter chain, routing strategy, etc.) |
+| **techContext.md** | Tech stack (Javalin 7.1.0, Java 21, schema), file structure |
+| **activeContext.md** | Current state, common pitfalls, code locations to reference |
+| **progress.md** | Completed phases, roadmap, known limitations |
+| **copilot-rules.md** | Coding standards, testing patterns, review checklist |
+| **README.md** (in memory-bank/) | Navigation index & usage guide |
+
+### ✨ Quick Links
+
+- **Adding a new filter?** → `systemPatterns.md` (Filter Chain Pattern) + `copilot-rules.md` (Implementation Pattern)
+- **Confused about architecture?** → `systemPatterns.md`
+- **Where does code go?** → `techContext.md` (Directory Structure)
+- **Common mistakes?** → `activeContext.md` (Pitfalls section)
+- **Broken something?** → `activeContext.md` + `copilot-rules.md` (Debugging Tips)
+
+### 🔄 Integration with Development
+
+**This memory bank enables:**
+✅ Structured feature development (phases, not chaos)  
+✅ Persistent AI context across sessions  
+✅ Prevention of architectural issues  
+✅ Standardized code style & testing  
+✅ New developer onboarding (read memory bank first!)  
+
+---
+
+# ╔══════════════════════════════════════════════════════════════╗
+# ║         JAVALIN GATEWAY PROJECT INSTRUCTIONS                 ║
+# ╚══════════════════════════════════════════════════════════════╝
+
+## Project Overview
+
+**Javalin Gateway** is a production-ready, fully-featured API reverse proxy built on Javalin 7.1.0 and Java 21.
+
+- **Type**: Lightweight reverse proxy with dynamic route management
+- **Language**: Java 21
+- **Framework**: Javalin 7.1.0 (Jetty 12)
+- **Resilience**: Rate limiting, circuit breaker, caching (per-route)
+- **Features**: Path/regex/header-based routing, load balancing, audit logging, WebSocket proxying
+- **Deployment**: Kubernetes-ready (stateless, multi-replica via PostgreSQL)
+
+### Quick Links
+- 📖 **Readme**: `/README.md`
+- 🎨 **Docs**: `/docs/` (all supplementary documentation)
+- 🗺️ **Memory Bank**: `/memory-bank/` (AI context, patterns, standards)
+- 🏗️ **Architecture**: See `systemPatterns.md` in memory bank
+
+---
+
 # ╔══════════════════════════════════════════════════════════════╗
 # ║              JAVALIN FRAMEWORK INSTRUCTIONS                  ║
 # ╚══════════════════════════════════════════════════════════════╝

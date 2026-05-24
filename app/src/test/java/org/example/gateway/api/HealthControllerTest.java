@@ -23,7 +23,7 @@ class HealthControllerTest {
 
     private Javalin buildApp(HealthController health) {
         return Javalin.create(cfg ->
-                cfg.router.apiBuilder(() ->
+                cfg.routes.apiBuilder(() ->
                         path("/gateway/health", () -> {
                             get(health::health);
                             get("/live",  health::liveness);

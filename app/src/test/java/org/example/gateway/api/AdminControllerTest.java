@@ -35,7 +35,7 @@ class AdminControllerTest {
 
     private Javalin buildApp(AdminController admin) {
         return Javalin.create(cfg ->
-                cfg.router.apiBuilder(() ->
+                cfg.routes.apiBuilder(() ->
                         path("/gateway/admin", () -> {
                             get("/routes", admin::listRoutes);
                             post("/routes", admin::createRoute);
@@ -102,6 +102,48 @@ class AdminControllerTest {
             var resp = client.post("/gateway/admin/reload", "");
             assertEquals(200, resp.code());
             assertTrue(resp.body().string().contains("reloaded"));
+        });
+    }
+
+    @Test
+    void updateRoute_acceptsJwtPolicy_fromJsonBody() {
+        RouteRegistry registry = new RouteRegistry();
+        registry.reload(List.of(sampleRoute()));
+        AdminController admin = new AdminController(registry,
+                new RouteLoader(new GatewayConfig(), registry, null), null);
+
+        String updateJson = """
+            {
+              "name": "Test Route",
+              "path-pattern": "/api/test",
+              "routing-type": "PATH",
+              "enabled": true,
+              "timeout-ms": 5000,
+              "load-balancer-type": "ROUND_ROBIN",
+              "targets": [
+                {"url": "http://localhost:9090", "weight": 1}
+              ],
+              "jwt-policy": {
+                "enabled": true,
+                "algorithm": "HS256",
+                "secret-or-public-key": "test-secret-key-minimum-32-chars!!",
+                "issuer": "",
+                "audience": "",
+                "required-claims": {},
+                "exclude-paths": []
+              }
+            }
+            """;
+
+        JavalinTest.test(buildApp(admin), (server, client) -> {
+            var put = client.put("/gateway/admin/routes/test-id", updateJson);
+            assertEquals(200, put.code());
+
+            var get = client.get("/gateway/admin/routes/test-id");
+            assertEquals(200, get.code());
+            String body = get.body().string();
+            assertTrue(body.contains("\"jwt-policy\""));
+            assertTrue(body.contains("\"enabled\":true"));
         });
     }
 }
