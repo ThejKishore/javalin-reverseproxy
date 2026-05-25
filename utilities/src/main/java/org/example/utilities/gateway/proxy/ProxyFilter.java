@@ -34,7 +34,7 @@ public class ProxyFilter implements GatewayFilter {
     @Override
     public void filter(FilterContext ctx, FilterChain chain) throws Exception {
         List<TargetDefinition> targets = ctx.getRouteDefinition().getTargets();
-        TargetDefinition target = loadBalancer.pick(targets);
+        TargetDefinition target = loadBalancer.pick(targets, ctx);   // context-aware
         if (target == null) {
             throw new NoTargetAvailableException(ctx.getRouteDefinition().getId());
         }

@@ -78,7 +78,7 @@ All supplementary docs live in the [`docs/`](./docs/) folder. Start here and fol
 | **Tracing** | Propagates / generates `X-Request-ID` and `X-Trace-ID` |
 | **Forwarded-For** | Injects `X-Forwarded-For` and `X-Real-IP` |
 | **Auth Forwarding** | Configurable list of auth headers forwarded verbatim |
-| **Security Filters** | Optional per-route JWT, CSRF, CSP, and HTTP input blacklist validation |
+| **Security Filters** | Global or per-route JWT, CSRF, CSP, and HTTP input blacklist validation |
 | **Auditing** | Records request/response metadata to database or log file |
 | **WebSocket** | Full bidirectional WebSocket proxying via OkHttp |
 | **HTTP/2 & HTTPS** | Transparent via OkHttp — no extra configuration needed |
@@ -109,19 +109,19 @@ Client
                 │
                 ▼
    ┌────────── Filter Chain ────────────────────────────────────────┐
-   │  JwtAuthFilter         (optional, per-route)                    │
-   │  CsrfGatewayFilter     (optional, unsafe methods only)          │
-   │  TracingFilter         (inject X-Request-ID, X-Trace-ID)        │
-   │  SlidingWindowRateLimiter  (optional, per-route)               │
-   │  CircuitBreakerGatewayFilter  (optional, per-route)            │
-   │  CacheGatewayFilter     (optional, GET only)                   │
-   │  ForwardedForFilter     (X-Forwarded-For / X-Real-IP)          │
-   │  HttpValidationFilter   (optional blacklist validation)         │
-   │  HeaderMutationFilter   (add/exclude request & response hdrs)  │
-   │  TransformGatewayFilter (pluggable body transforms)            │
-   │  DedupeResponseHeadersFilter  (optional)                       │
-   │  CspGatewayFilter       (optional CSP response header)          │
-   │  ProxyFilter            ← terminal: LoadBalancer + OkHttp      │
+   │  JwtAuthFilter         (global or per-route — fail fast)                │
+   │  CsrfGatewayFilter     (global or per-route — unsafe methods only)      │
+   │  TracingFilter         (inject X-Request-ID, X-Trace-ID)                │
+   │  SlidingWindowRateLimiter  (optional, per-route)                        │
+   │  CircuitBreakerGatewayFilter  (optional, per-route)                     │
+   │  CacheGatewayFilter     (optional, GET only)                            │
+   │  ForwardedForFilter     (X-Forwarded-For / X-Real-IP)                   │
+   │  HttpValidationFilter   (optional blacklist validation)                  │
+   │  HeaderMutationFilter   (add/exclude request & response hdrs)           │
+   │  TransformGatewayFilter (pluggable body transforms)                     │
+   │  DedupeResponseHeadersFilter  (optional)                                │
+   │  CspGatewayFilter       (global or per-route CSP response header)       │
+   │  ProxyFilter            ← terminal: LoadBalancer + OkHttp               │
    └────────────────────────────────────────────────────────────────┘
                 │
                 ▼
@@ -269,6 +269,7 @@ path-pattern: /api/users
 # Matches: /api/users, /api/users/123
 # Does NOT match: /api/users-v2
 ```
+LoadBalanecer Type `ROUND_ROBIN` or `RANDOM` is recommended for PATH routes.
 
 ### REGEX
 Full Java regex match against the request path.
@@ -276,17 +277,23 @@ Full Java regex match against the request path.
 routing-type: REGEX
 path-pattern: "/api/v[0-9]+/.*"
 ```
+LoadBalancer Type `ROUND_ROBIN` or `RANDOM` is recommended for REGEX routes.
 
 ### HEADER
-Matches when a specific header (optionally with a specific value) is present.
+Routes only when a specific request header matches a configured value.
 ```yaml
 routing-type: HEADER
 header-match-name: X-Canary
 header-match-value: "true"
 ```
+LoadBalancer Type `ROUND_ROBIN` or `RANDOM` is recommended for HEADER routes.
 
 ### TRAFFIC_SPLIT
-Weight-based distribution with no path constraint.
+Weight-based or header-based distribution across multiple targets.
+
+LoadBalancer Type `WEIGHTED` or `HEADER` is recommended for TRAFFIC_SPLIT routes.
+
+Scenario 1: 90% stable, 10% canary Traffic split:
 ```yaml
 routing-type: TRAFFIC_SPLIT
 load-balancer-type: WEIGHTED
@@ -297,15 +304,32 @@ targets:
     weight: 1
 ```
 
+Scenario 2: Header-based split (e.g., A/B testing):
+
+```yaml
+routing-type: TRAFFIC_SPLIT
+load-balancer-type: HEADER
+header-match-name: X-User-Group
+header-match-value: "beta"
+targets:
+  - url: http://beta-group:8080
+    header-match-name: X-User-Group
+    header-match-value: "beta"
+  - url: http://default-group:8080
+    header-match-name: X-User-Group
+    header-match-value: "default"
+```
+
 ---
 
 ## Load Balancing
 
-| Strategy | Behaviour |
-|---|---|
-| `ROUND_ROBIN` | Cycles through targets (lock-free AtomicInteger, per-route) |
-| `WEIGHTED` | Random selection proportional to `weight` |
-| `RANDOM` | Uniform random selection |
+| Strategy      | Behaviour                                                                  |
+|---------------|----------------------------------------------------------------------------|
+| `ROUND_ROBIN` | Cycles through targets (lock-free AtomicInteger, per-route)                |
+| `WEIGHTED`    | Random selection proportional to `weight`                                  |
+| `HEADER`      | Routes to the target whose `header-match-value` matches the request header |
+| `RANDOM`      | Uniform random selection                                                   |
 
 ---
 
@@ -384,7 +408,10 @@ These headers are forwarded verbatim to the upstream regardless of `exclude-requ
 
 ## Security Filters
 
-All security filters are optional and route-scoped.
+Security filters can be configured **globally** (applied to all routes) in the
+top-level `gateway:` block, or **per-route** to override or disable the global
+policy for specific routes. Global policies are hot-reloadable via
+`POST /gateway/admin/reload`.
 
 | Filter | Purpose | Failure Status |
 |---|---|---|
@@ -392,6 +419,31 @@ All security filters are optional and route-scoped.
 | `CsrfGatewayFilter` | Enforces CSRF token on unsafe methods (`POST`,`PUT`,`DELETE`,`PATCH`) | `403` |
 | `HttpValidationFilter` | Validates query/header/cookie/body against blacklist regex rules | `400` |
 | `CspGatewayFilter` | Injects `Content-Security-Policy` (or report-only variant) on response | N/A (header injection) |
+
+Global policy example (applies to every route):
+```yaml
+gateway:
+  jwt-policy:
+    enabled: true
+    algorithm: HS256
+    secret-or-public-key: "change-me-minimum-32-chars-secret!!"
+    exclude-paths: [/gateway/health, /gateway/admin]
+  csrf-policy:
+    enabled: true
+    bind-to: IP
+    exclude-paths: [/gateway/health, /gateway/admin]
+  csp-policy:
+    enabled: true
+    policy: "default-src 'self'"
+    exclude-paths: [/gateway/health, /gateway/admin]
+```
+
+Per-route override (disable JWT for one route):
+```yaml
+routes:
+  - id: public-service
+    jwt-policy: { enabled: false }
+```
 
 CSRF tokens are stored via distributed `CsrfTokenStore` (Hazelcast implementation in `app`).
 

@@ -424,9 +424,10 @@ public class RouteRegistry {
 
     private LoadBalancer createLoadBalancer(RouteDefinition route) {
         return switch (route.getLoadBalancerType()) {
-            case WEIGHTED   -> new WeightedLoadBalancer();
-            case RANDOM     -> new RandomLoadBalancer();
-            default         -> new RoundRobinLoadBalancer();
+            case WEIGHTED -> new WeightedLoadBalancer();
+            case RANDOM   -> new RandomLoadBalancer();
+            case HEADER   -> new HeaderLoadBalancer();
+            default       -> new RoundRobinLoadBalancer();
         };
     }
 }

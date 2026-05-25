@@ -35,6 +35,9 @@ gateway:
       - /gateway/health
       - /gateway/admin
       - /api/example
+      - /tla/api
+      - /tla/weighted
+      - /tla/longrun
 
   # ── Global CSRF policy — enforced on ALL routes unless overridden ─────────
   # A route can opt-out by adding:  csrf-policy: { enabled: false }
