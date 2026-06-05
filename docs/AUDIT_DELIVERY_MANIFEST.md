@@ -13,7 +13,7 @@
 #### 1. AdminController.java
 ```
 Added imports:
-- import org.example.gateway.db.AuditDao;
+- import org.example.gateway.storage.audit.AuditDao;
 
 Added methods:
 - public void getAuditLogs(Context ctx)

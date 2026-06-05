@@ -8,7 +8,9 @@
 package org.example.gateway;
 
 import io.javalin.Javalin;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.example.gateway.api.AdminController;
+import org.example.gateway.api.AuditController;
 import org.example.gateway.api.HealthController;
 import org.example.gateway.config.GatewayConfig;
 import org.example.gateway.config.HazelcastConfig;
@@ -19,6 +21,14 @@ import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
 import org.example.gateway.security.HazelcastCsrfTokenStore;
 import org.example.gateway.security.ValidationRuleStore;
+import org.example.gateway.storage.audit.AuditStorageProvider;
+import org.example.gateway.storage.audit.AuditStorageProviderFactory;
+import org.example.gateway.storage.changelog.ChangeLogStorageProvider;
+import org.example.gateway.storage.changelog.ChangeLogStorageProviderFactory;
+import org.example.gateway.storage.routes.RouteStorageProvider;
+import org.example.gateway.storage.routes.RouteStorageProviderFactory;
+import org.example.gateway.storage.validationrule.ValidationRuleStorageProvider;
+import org.example.gateway.storage.validationrule.ValidationRuleStorageProviderFactory;
 import org.example.utilities.gateway.exception.CircuitBreakerOpenException;
 import org.example.utilities.gateway.exception.GatewayException;
 import org.example.utilities.gateway.exception.NoTargetAvailableException;
@@ -78,7 +88,11 @@ public class GatewayApp {
         }
 
         // ── Validation rule store (hot-reloadable ESAPI patterns) ─────────────
-        ValidationRuleStore validationRuleStore = new ValidationRuleStore(jdbi);
+        boolean isYaml = "yaml".equalsIgnoreCase(config.getConfigSource());
+        ValidationRuleStorageProvider validationRuleStorageProvider = isYaml
+                ? null
+                : ValidationRuleStorageProviderFactory.create(config, jdbi);
+        ValidationRuleStore validationRuleStore = new ValidationRuleStore(validationRuleStorageProvider);
         validationRuleStore.reload();
 
         // Adapter: ValidationRuleStore → HttpValidationFilter.HttpValidationRuleProvider
@@ -117,18 +131,33 @@ public class GatewayApp {
                     config.getCspPolicy().getPolicy());
         }
 
-        RouteLoader loader = new RouteLoader(config, registry, jdbi);
+        // ── Storage provider (routes) ─────────────────────────────────────────
+        RouteStorageProvider storageProvider = isYaml
+                ? null
+                : RouteStorageProviderFactory.create(config, jdbi);
+
+        // ── Storage providers (audit, changelog) ──────────────────────────────
+        AuditStorageProvider auditProvider = isYaml
+                ? null
+                : AuditStorageProviderFactory.create(config, jdbi);
+        ChangeLogStorageProvider changeLogProvider = isYaml
+                ? null
+                : ChangeLogStorageProviderFactory.create(config, jdbi);
+
+        RouteLoader loader = new RouteLoader(config, registry, storageProvider);
         loader.load();
+        AdminController admin = new AdminController(registry, loader, storageProvider,
+                validationRuleStore, changeLogProvider, validationRuleStorageProvider);
+        AuditController audit = new AuditController(auditProvider, changeLogProvider);
+        HealthController health = new HealthController(registry);
 
         // Handlers & controllers
         ProxyHandler proxyHandler = new ProxyHandler(registry, jdbi);
-        AdminController admin = new AdminController(registry, loader, jdbi, validationRuleStore);
-        HealthController health = new HealthController(registry);
 
         // ── Build Javalin app ─────────────────────────────────────────────────
         Javalin app = Javalin.create(cfg -> {
             cfg.bundledPlugins.enableDevLogging();
-            cfg.bundledPlugins.enableCors(cors -> cors.addRule(it -> it.anyHost()));
+            cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
 
             // ── Health endpoints ──────────────────────────────────────────────
             cfg.routes.apiBuilder(() ->
@@ -143,11 +172,9 @@ public class GatewayApp {
             cfg.routes.apiBuilder(() ->
                 path("/gateway/admin", () -> {
                     post("/reload", admin::reload);
-                    get("/audit/logs", admin::getAuditLogs);
-                    get("/change-logs", admin::getChangeLogs);
-                    path("/audit/routes/{routeId}", () -> {
-                        get(admin::getRouteAuditLogs);
-                    });
+                    get("/audit/logs", audit::getAuditLogs);
+                    get("/change-logs", audit::getChangeLogs);
+                    path("/audit/routes/{routeId}", () -> get(audit::getRouteAuditLogs));
                     path("/routes", () -> {
                         get(admin::listRoutes);
                         post(admin::createRoute);
@@ -174,13 +201,13 @@ public class GatewayApp {
             );
 
             // ── Catch-all HTTP proxy (all verbs, slash-spanning param) ─────────
-            cfg.routes.get("/<path>",     proxyHandler::handle);
-            cfg.routes.post("/<path>",    proxyHandler::handle);
-            cfg.routes.put("/<path>",     proxyHandler::handle);
-            cfg.routes.patch("/<path>",   proxyHandler::handle);
-            cfg.routes.delete("/<path>",  proxyHandler::handle);
-            cfg.routes.get("/",           proxyHandler::handle);
-            cfg.routes.post("/",          proxyHandler::handle);
+            cfg.routes.get("/<path>", proxyHandler);
+            cfg.routes.post("/<path>", proxyHandler);
+            cfg.routes.put("/<path>", proxyHandler);
+            cfg.routes.patch("/<path>", proxyHandler);
+            cfg.routes.delete("/<path>", proxyHandler);
+            cfg.routes.get("/", proxyHandler);
+            cfg.routes.post("/", proxyHandler);
 
 
             // ── Exception handlers ────────────────────────────────────────────

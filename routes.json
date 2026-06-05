@@ -1,0 +1,270 @@
+[
+  {
+    "audit-enabled": false,
+    "audit-store": "database",
+    "auth-forward-headers": [
+      "Authorization",
+      "X-API-Key"
+    ],
+    "cache-policy": {
+      "cache-key-strategy": "METHOD_PATH_QUERY",
+      "enabled": false,
+      "ttl-seconds": 300
+    },
+    "circuit-breaker-policy": {
+      "enabled": false,
+      "failure-rate-threshold": 50,
+      "sliding-window-size": 10,
+      "wait-duration-seconds": 60
+    },
+    "csp-policy": {
+      "enabled": false,
+      "exclude-paths": [],
+      "policy": "default-src 'self'",
+      "report-only": false
+    },
+    "csrf-policy": {
+      "bind-to": "IP",
+      "enabled": false,
+      "exclude-paths": [],
+      "token-ttl-seconds": 3600
+    },
+    "enabled": true,
+    "header-match-name": null,
+    "header-match-value": null,
+    "header-rules": {
+      "add-request": {
+        "X-Gateway": "javalin-gateway",
+        "X-Gateway-Version": "1.0.0"
+      },
+      "add-response": {
+        "X-Powered-By": "javalin-gateway"
+      },
+      "dedupe-response-headers": [
+        "Access-Control-Allow-Origin"
+      ],
+      "exclude-request": [
+        "Cookie"
+      ],
+      "exclude-response": [
+        "Server"
+      ]
+    },
+    "http-validation-policy": {
+      "enabled": false,
+      "exclude-paths": [],
+      "validate-body": false,
+      "validate-cookies": true,
+      "validate-headers": true,
+      "validate-query-params": true
+    },
+    "id": "example-service",
+    "jwt-policy": null,
+    "load-balancer-type": "ROUND_ROBIN",
+    "name": "Example Service",
+    "path-pattern": "/api/example",
+    "rate-limit-policy": {
+      "burst": 20,
+      "enabled": false,
+      "requests-per-second": 100,
+      "timeout-duration-ms": 0
+    },
+    "routing-type": "PATH",
+    "strip-prefix": "/api/example",
+    "targets": [
+      {
+        "header-match-name": null,
+        "header-match-value": null,
+        "url": "https://jsonplaceholder.typicode.com",
+        "weight": 1
+      }
+    ],
+    "timeout-ms": 5000
+  },
+  {
+    "audit-enabled": false,
+    "audit-store": "database",
+    "auth-forward-headers": [],
+    "cache-policy": {
+      "cache-key-strategy": "METHOD_PATH_QUERY",
+      "enabled": true,
+      "ttl-seconds": 60
+    },
+    "circuit-breaker-policy": null,
+    "csp-policy": null,
+    "csrf-policy": null,
+    "enabled": false,
+    "header-match-name": null,
+    "header-match-value": null,
+    "header-rules": {
+      "add-request": {},
+      "add-response": {},
+      "dedupe-response-headers": [
+      ],
+      "exclude-request": [
+      ],
+      "exclude-response": [
+      ]
+    },
+    "http-validation-policy": null,
+    "id": "regex-route",
+    "jwt-policy": null,
+    "load-balancer-type": "ROUND_ROBIN",
+    "name": "Regex Route",
+    "path-pattern": "/api/v[0-9]+/.*",
+    "rate-limit-policy": null,
+    "routing-type": "REGEX",
+    "strip-prefix": null,
+    "targets": [
+      {
+        "header-match-name": null,
+        "header-match-value": null,
+        "url": "http://versioned-service:8080",
+        "weight": 1
+      }
+    ],
+    "timeout-ms": 5000
+  },
+  {
+    "audit-enabled": false,
+    "audit-store": "database",
+    "auth-forward-headers": [],
+    "cache-policy": null,
+    "circuit-breaker-policy": null,
+    "csp-policy": null,
+    "csrf-policy": null,
+    "enabled": false,
+    "header-match-name": null,
+    "header-match-value": null,
+    "header-rules": {
+      "add-request": {},
+      "add-response": {},
+      "dedupe-response-headers": [
+      ],
+      "exclude-request": [
+      ],
+      "exclude-response": [
+      ]
+    },
+    "http-validation-policy": null,
+    "id": "traffic-split",
+    "jwt-policy": null,
+    "load-balancer-type": "WEIGHTED",
+    "name": "Traffic Split (90/10)",
+    "path-pattern": "/api/split",
+    "rate-limit-policy": null,
+    "routing-type": "TRAFFIC_SPLIT",
+    "strip-prefix": null,
+    "targets": [
+      {
+        "header-match-name": null,
+        "header-match-value": null,
+        "url": "http://stable-service:8080",
+        "weight": 9
+      },
+      {
+        "header-match-name": null,
+        "header-match-value": null,
+        "url": "http://beta-service:8080",
+        "weight": 1
+      }
+    ],
+    "timeout-ms": 5000
+  },
+  {
+    "audit-enabled": false,
+    "audit-store": "database",
+    "auth-forward-headers": [],
+    "cache-policy": null,
+    "circuit-breaker-policy": null,
+    "csp-policy": null,
+    "csrf-policy": null,
+    "enabled": false,
+    "header-match-name": "X-Canary",
+    "header-match-value": "true",
+    "header-rules": {
+      "add-request": {},
+      "add-response": {},
+      "dedupe-response-headers": [
+      ],
+      "exclude-request": [
+      ],
+      "exclude-response": [
+      ]
+    },
+    "http-validation-policy": null,
+    "id": "canary-service",
+    "jwt-policy": null,
+    "load-balancer-type": "RANDOM",
+    "name": "Canary Service",
+    "path-pattern": "/api/canary",
+    "rate-limit-policy": null,
+    "routing-type": "HEADER",
+    "strip-prefix": null,
+    "targets": [
+      {
+        "header-match-name": null,
+        "header-match-value": null,
+        "url": "http://canary-service:8080",
+        "weight": 1
+      }
+    ],
+    "timeout-ms": 5000
+  },
+  {
+    "audit-enabled": true,
+    "audit-store": "database",
+    "auth-forward-headers": [],
+    "cache-policy": null,
+    "circuit-breaker-policy": {
+      "enabled": true,
+      "failure-rate-threshold": 50,
+      "sliding-window-size": 10,
+      "wait-duration-seconds": 30
+    },
+    "csp-policy": null,
+    "csrf-policy": null,
+    "enabled": false,
+    "header-match-name": null,
+    "header-match-value": null,
+    "header-rules": {
+      "add-request": {},
+      "add-response": {},
+      "dedupe-response-headers": [
+      ],
+      "exclude-request": [
+      ],
+      "exclude-response": [
+      ]
+    },
+    "http-validation-policy": null,
+    "id": "backend-lb",
+    "jwt-policy": null,
+    "load-balancer-type": "ROUND_ROBIN",
+    "name": "Load-Balanced Backend",
+    "path-pattern": "/api/backend",
+    "rate-limit-policy": {
+      "burst": 50,
+      "enabled": true,
+      "requests-per-second": 200,
+      "timeout-duration-ms": 0
+    },
+    "routing-type": "PATH",
+    "strip-prefix": "/api/backend",
+    "targets": [
+      {
+        "header-match-name": null,
+        "header-match-value": null,
+        "url": "http://backend-1:8080",
+        "weight": 2
+      },
+      {
+        "header-match-name": null,
+        "header-match-value": null,
+        "url": "http://backend-2:8080",
+        "weight": 1
+      }
+    ],
+    "timeout-ms": 3000
+  }
+]

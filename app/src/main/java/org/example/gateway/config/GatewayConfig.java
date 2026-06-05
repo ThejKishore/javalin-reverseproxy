@@ -16,6 +16,7 @@ import org.example.utilities.gateway.model.RouteDefinition;
 import java.util.ArrayList;
 import java.util.List;
 
+
 /**
  * Top-level gateway configuration, populated from the {@code gateway:} block
  * in {@code application.yml}.
@@ -42,6 +43,10 @@ public class GatewayConfig {
     /** Hazelcast cluster configuration for distributed CSRF token storage. */
     @JsonProperty("hazelcast")
     private HazelcastConfig hazelcast = new HazelcastConfig();
+
+    /** EclipseStore configuration (used when config-source = eclipse-store-lcl or eclipse-store-azure). */
+    @JsonProperty("eclipse-store")
+    private EclipseStoreConfig eclipseStore = new EclipseStoreConfig();
 
     /**
      * Global JWT policy applied to every route by default.
@@ -85,6 +90,9 @@ public class GatewayConfig {
 
     public HazelcastConfig getHazelcast() { return hazelcast; }
     public void setHazelcast(HazelcastConfig hazelcast) { this.hazelcast = hazelcast; }
+
+    public EclipseStoreConfig getEclipseStore() { return eclipseStore; }
+    public void setEclipseStore(EclipseStoreConfig eclipseStore) { this.eclipseStore = eclipseStore; }
 
     public JwtPolicy getJwtPolicy() { return jwtPolicy; }
     public void setJwtPolicy(JwtPolicy jwtPolicy) { this.jwtPolicy = jwtPolicy; }

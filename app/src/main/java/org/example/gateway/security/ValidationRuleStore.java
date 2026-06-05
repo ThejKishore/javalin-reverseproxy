@@ -7,9 +7,7 @@
  */
 package org.example.gateway.security;
 
-import org.example.gateway.db.ValidationRuleDao;
-import org.example.gateway.db.ValidationRuleRow;
-import org.jdbi.v3.core.Jdbi;
+import org.example.gateway.storage.validationrule.ValidationRuleStorageProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,16 +15,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Thread-safe, hot-reloadable store of compiled validation {@link Pattern}s.
  *
- * <p>Patterns are loaded from the {@code validation_rules} database table.
- * Calling {@link #reload()} re-fetches the enabled patterns without gateway
- * restart. The {@link org.example.gateway.api.AdminController} exposes a
- * dedicated endpoint ({@code POST /gateway/admin/security/rules/reload}) that
- * delegates to this method.
+ * <p>Patterns are loaded from the configured {@link ValidationRuleStorageProvider}.
+ * Calling {@link #reload()} re-fetches the enabled patterns without gateway restart.
+ * The {@link org.example.gateway.api.AdminController} exposes a dedicated endpoint
+ * ({@code POST /gateway/admin/security/rules/reload}) that delegates to this method.
  */
 public class ValidationRuleStore {
 
@@ -34,11 +30,11 @@ public class ValidationRuleStore {
 
     public record CompiledRule(String id, String name, String target, Pattern pattern) {}
 
-    private final Jdbi jdbi;
+    private final ValidationRuleStorageProvider storageProvider;
     private final CopyOnWriteArrayList<CompiledRule> rules = new CopyOnWriteArrayList<>();
 
-    public ValidationRuleStore(Jdbi jdbi) {
-        this.jdbi = jdbi;
+    public ValidationRuleStore(ValidationRuleStorageProvider storageProvider) {
+        this.storageProvider = storageProvider;
     }
 
     /** Returns an unmodifiable snapshot of the currently loaded rules. */
@@ -47,31 +43,29 @@ public class ValidationRuleStore {
     }
 
     /**
-     * Reloads enabled rules from the database and recompiles all patterns.
+     * Reloads enabled rules from the storage provider and recompiles all patterns.
      * Thread-safe — uses a {@link CopyOnWriteArrayList} atomic replace.
      */
     public synchronized void reload() {
-        if (jdbi == null) {
-            log.warn("ValidationRuleStore: jdbi is null — skipping reload");
+        if (storageProvider == null) {
+            log.warn("ValidationRuleStore: storageProvider is null — skipping reload");
             return;
         }
         try {
-            List<ValidationRuleRow> rows = jdbi.withExtension(ValidationRuleDao.class,
-                    ValidationRuleDao::findAllEnabled);
-
-            List<CompiledRule> compiled = rows.stream()
-                    .map(row -> {
+            List<CompiledRule> compiled = storageProvider.findAllEnabled().stream()
+                    .map(entry -> {
                         try {
-                            Pattern p = Pattern.compile(row.getPattern(), Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-                            return new CompiledRule(row.getId(), row.getName(), row.getTarget(), p);
+                            Pattern p = Pattern.compile(entry.pattern(),
+                                    Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+                            return new CompiledRule(entry.id(), entry.name(), entry.target(), p);
                         } catch (Exception e) {
                             log.warn("Invalid validation rule pattern id={} pattern='{}': {}",
-                                    row.getId(), row.getPattern(), e.getMessage());
+                                    entry.id(), entry.pattern(), e.getMessage());
                             return null;
                         }
                     })
                     .filter(r -> r != null)
-                    .collect(Collectors.toList());
+                    .toList();
 
             rules.clear();
             rules.addAll(compiled);

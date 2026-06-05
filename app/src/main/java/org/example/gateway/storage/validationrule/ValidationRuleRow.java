@@ -5,15 +5,15 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package org.example.gateway.db;
+package org.example.gateway.storage.validationrule;
 
-/** Row model for the {@code routes} table. */
-public class RouteRow {
+/** Row model for the {@code validation_rules} table. */
+public class ValidationRuleRow {
 
     private String id;
     private String name;
-    /** Full {@link org.example.utilities.gateway.model.RouteDefinition} serialised as JSON. */
-    private String configJson;
+    private String pattern;
+    private String target;   // QUERY_PARAM | HEADER | COOKIE | BODY | ALL
     private boolean enabled;
     private java.time.Instant createdAt;
     private java.time.Instant updatedAt;
@@ -24,8 +24,11 @@ public class RouteRow {
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
 
-    public String getConfigJson() { return configJson; }
-    public void setConfigJson(String configJson) { this.configJson = configJson; }
+    public String getPattern() { return pattern; }
+    public void setPattern(String pattern) { this.pattern = pattern; }
+
+    public String getTarget() { return target; }
+    public void setTarget(String target) { this.target = target; }
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }

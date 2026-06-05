@@ -10,13 +10,14 @@ package org.example.gateway.registry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.example.gateway.config.GatewayConfig;
 import org.example.gateway.config.YamlConfigLoader;
-import org.example.gateway.db.RouteDao;
-import org.example.gateway.db.RouteRow;
+import org.example.gateway.routes.dao.RouteDao;
+import org.example.gateway.routes.mapper.RouteMapper;
+import org.example.gateway.routes.model.RouteDto;
+import org.example.gateway.storage.routes.RouteStorageProvider;
 import org.example.utilities.gateway.model.CspPolicy;
 import org.example.utilities.gateway.model.CsrfPolicy;
 import org.example.utilities.gateway.model.JwtPolicy;
 import org.example.utilities.gateway.model.RouteDefinition;
-import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +25,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads {@link RouteDefinition} instances from either the YAML config or the
- * database, then pushes them into the {@link RouteRegistry}.
+ * Loads {@link RouteDefinition} instances from the configured storage source
+ * and pushes them into the {@link RouteRegistry}.
+ *
+ * <p>Supported sources (from {@code gateway.config-source}):
+ * <ul>
+ *   <li>{@code yaml}                — reads routes from {@code application.yml}</li>
+ *   <li>{@code database}            — reads from JDBI via {@link RouteStorageProvider}</li>
+ *   <li>{@code eclipse-store-lcl}   — reads from EclipseStore local filesystem</li>
+ *   <li>{@code eclipse-store-azure} — reads from EclipseStore on Azure Blob Storage</li>
+ * </ul>
  */
 public class RouteLoader {
 
@@ -33,31 +42,62 @@ public class RouteLoader {
 
     private final GatewayConfig config;
     private final RouteRegistry registry;
-    private final Jdbi jdbi;
-    private final ObjectMapper jsonMapper = YamlConfigLoader.jsonMapper();
 
-    public RouteLoader(GatewayConfig config, RouteRegistry registry, Jdbi jdbi) {
+    private final ObjectMapper jsonMapper = YamlConfigLoader.jsonMapper();
+    private final RouteStorageProvider storageProvider;
+
+
+    /** Full constructor with explicit storage provider. */
+    public RouteLoader(GatewayConfig config, RouteRegistry registry,RouteStorageProvider storageProvider) {
         this.config = config;
         this.registry = registry;
-        this.jdbi = jdbi;
+        this.storageProvider = storageProvider;
     }
 
-    /** Loads routes and pushes them into the registry. */
+    /** Loads routes from the configured source and pushes them into the registry. */
     public void load() {
-        // Re-read YAML on every load so that changes to the global jwt-policy
-        // (e.g. exclude-paths) take effect without a server restart.
         refreshGlobalJwtPolicy();
 
-        List<RouteDefinition> routes = "database".equalsIgnoreCase(config.getConfigSource())
-                ? loadFromDatabase()
-                : loadFromYaml();
+        List<RouteDefinition> routes;
+        String source = config.getConfigSource();
+
+        if ("yaml".equalsIgnoreCase(source)) {
+            routes = loadFromYaml();
+        } else {
+            routes = loadFromStorageProvider();
+        }
+
         registry.reload(routes);
     }
 
+    // ── Source implementations ────────────────────────────────────────────────
+
+    private List<RouteDefinition> loadFromYaml() {
+        log.info("Loading routes from application.yml ({} defined)", config.getRoutes().size());
+        return new ArrayList<>(config.getRoutes());
+    }
+
+    private List<RouteDefinition> loadFromStorageProvider() {
+        List<RouteDao> daos = storageProvider.findAll();
+        log.info("Loading {} route(s) from storage provider ({})", daos.size(), config.getConfigSource());
+        List<RouteDefinition> defs = new ArrayList<>();
+        for (RouteDao dao : daos) {
+            try {
+                RouteDto dto = RouteMapper.routeDaoToRouteDto(dao);
+                String json = jsonMapper.writeValueAsString(dto);
+                RouteDefinition def = jsonMapper.readValue(json, RouteDefinition.class);
+                defs.add(def);
+            } catch (Exception e) {
+                log.error("Failed to convert route '{}': {}", dao.id(), e.getMessage());
+            }
+        }
+        return defs;
+    }
+
+
     /**
      * Re-reads {@code application.yml} and pushes updated global security policies
-     * (JWT, CSRF, CSP) into the registry.  Silently skips on parse errors so a
-     * single bad YAML edit cannot disable the gateway.
+     * into the registry.  Silently skips on parse errors.
      */
     private void refreshGlobalJwtPolicy() {
         try {
@@ -84,31 +124,4 @@ public class RouteLoader {
             log.warn("Failed to refresh global security policies from YAML — keeping previous: {}", e.getMessage());
         }
     }
-
-    // ── Source implementations ────────────────────────────────────────────────
-
-    private List<RouteDefinition> loadFromYaml() {
-        log.info("Loading routes from application.yml ({} defined)",
-                config.getRoutes().size());
-        return new ArrayList<>(config.getRoutes());
-    }
-
-    private List<RouteDefinition> loadFromDatabase() {
-        return jdbi.withExtension(RouteDao.class, dao -> {
-            List<RouteRow> rows = dao.findAll();
-            log.info("Loading {} route(s) from database", rows.size());
-            List<RouteDefinition> defs = new ArrayList<>();
-            for (RouteRow row : rows) {
-                try {
-                    RouteDefinition def = jsonMapper.readValue(row.getConfigJson(), RouteDefinition.class);
-                    def.setEnabled(row.isEnabled());
-                    defs.add(def);
-                } catch (Exception e) {
-                    log.error("Failed to deserialise route '{}': {}", row.getId(), e.getMessage());
-                }
-            }
-            return defs;
-        });
-    }
 }
-

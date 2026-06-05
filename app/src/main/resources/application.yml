@@ -1,8 +1,13 @@
 gateway:
   port: 8080
 
-  # Where to load routes from: "yaml" (this file) or "database"
-  config-source: database
+  # Where to load routes from: "yaml" (this file)
+  # or "database"
+  # or "eclipse-store-lcl" (local file store for Eclipse IDE users)
+  # or eclipse-store-azure (Azure Blob Storage for Eclipse IDE users)
+
+  config-source: eclipse-store-lcl
+#  config-source: database
 
   # How often routes are refreshed from the source (seconds)
   refresh-interval-seconds: 60
@@ -87,12 +92,15 @@ gateway:
         cache-key-strategy: METHOD_PATH_QUERY
       header-rules:
         add-request:
-          X-Gateway: "javalin-gateway"
-          X-Gateway-Version: "1.0.0"
+          - name: X-Gateway
+            value: "javalin-gateway"
+          - name: X-Gateway-Version
+            value: "1.0.0"
         exclude-request:
           - Cookie
         add-response:
-          X-Powered-By: "javalin-gateway"
+          - name: X-Powered-By
+            value: "javalin-gateway"
         exclude-response:
           - Server
         dedupe-response-headers:

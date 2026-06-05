@@ -5,7 +5,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package org.example.gateway.db;
+package org.example.gateway.storage.audit;
 
 /** Row model for the {@code audit_logs} table. */
 public class AuditLogRow {

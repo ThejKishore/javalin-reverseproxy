@@ -5,7 +5,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package org.example.gateway.db;
+package org.example.gateway.storage.routes;
 
 import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.customizer.Bind;
@@ -21,7 +21,7 @@ import java.util.Optional;
  * the {@code config_json} column.
  */
 @RegisterBeanMapper(RouteRow.class)
-public interface RouteDao {
+public interface RouteJdbi {
 
     @SqlQuery("SELECT id, name, config_json, enabled, created_at, updated_at FROM routes WHERE enabled = TRUE ORDER BY created_at")
     List<RouteRow> findAllEnabled();

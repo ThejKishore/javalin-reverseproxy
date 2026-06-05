@@ -17,4 +17,4 @@ plugins {
 }
 
 rootProject.name = "javalin-gateway"
-include("app", "utilities")
+include("app", "utilities" ,"shared")

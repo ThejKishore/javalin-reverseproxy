@@ -5,7 +5,7 @@
  *
  *     http://www.apache.org/licenses/LICENSE-2.0
  */
-package org.example.gateway.db;
+package org.example.gateway.storage.changelog;
 
 /** Row model for the {@code change_logs} table. */
 public class ChangeLogRow {

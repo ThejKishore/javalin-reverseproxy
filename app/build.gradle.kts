@@ -9,6 +9,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":shared"))
     implementation(project(":utilities"))
 
     // Jackson YAML for application.yml parsing
@@ -22,6 +23,12 @@ dependencies {
     implementation(libs.h2)
     implementation(libs.postgresql)
     runtimeOnly(libs.flyway.postgresql)
+
+    //
+    implementation("org.eclipse.store:storage-embedded:4.1.0")
+    implementation("org.eclipse.store:afs-azure-storage:4.1.0")
+    implementation("com.azure:azure-storage-blob:12.29.0")
+
 
     // Flyway — schema migrations
     implementation(libs.flyway.core)

@@ -22,7 +22,8 @@ class YamlConfigLoaderTest {
         assertNotNull(config);
         assertEquals(8080, config.getPort());
         assertTrue(
-            "yaml".equals(config.getConfigSource()) || "database".equals(config.getConfigSource()),
+            java.util.Set.of("yaml", "database", "eclipse-store-lcl", "eclipse-store-azure")
+                .contains(config.getConfigSource()),
             "config-source should be one of the supported values"
         );
         assertFalse(config.getRoutes().isEmpty(), "at least one route should be defined");
