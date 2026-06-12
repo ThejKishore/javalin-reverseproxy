@@ -8,10 +8,12 @@
 package org.example.gateway.storage.changelog;
 
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import org.eclipse.store.afs.azure.storage.types.AzureStorageConnector;
+import org.eclipse.serializer.afs.types.ADirectory;
 import org.eclipse.store.afs.blobstore.types.BlobStoreFileSystem;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.ChangeLogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,24 +33,24 @@ public class EclipseStoreAzureChangeLogStorageProvider implements ChangeLogStora
     private final EmbeddedStorageManager storageManager;
     private final ChangeLogStoreRoot root;
 
-    public EclipseStoreAzureChangeLogStorageProvider(String connectionString, String containerName) {
-        String changelogContainer = containerName + "-changelog";
+    public EclipseStoreAzureChangeLogStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadAzureSettings(config, "changelog");
+        String changelogContainer = EclipseStoreConfigSupport.suffixedContainer(settings.getAzureContainer(), "-changelog");
         log.info("Starting EclipseStore Azure changelog storage (container='{}')", changelogContainer);
 
-        var blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
-        AzureStorageConnector connector = AzureStorageConnector.New(blobServiceClient);
-        BlobStoreFileSystem fileSystem = BlobStoreFileSystem.New(connector);
+        BlobStoreFileSystem fileSystem = EclipseStoreConfigSupport.newAzureFileSystem(settings);
+        ADirectory directory = fileSystem.ensureDirectoryPath(changelogContainer);
 
         ChangeLogStoreRoot initialRoot = new ChangeLogStoreRoot();
-        this.storageManager = EmbeddedStorage.start(initialRoot,
-                fileSystem.ensureDirectoryPath(changelogContainer));
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                EclipseStoreConfigSupport.buildAzureFoundation(settings, directory),
+                initialRoot);
 
         Object stored = storageManager.root();
         this.root = stored instanceof ChangeLogStoreRoot r ? r : initialRoot;
         log.info("EclipseStore Azure changelog: loaded {} entries", root.getEntries().size());
     }
+
 
     @Override
     public void insert(ChangeLogEntry entry) {

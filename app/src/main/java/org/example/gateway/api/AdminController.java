@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.javalin.http.BadRequestResponse;
 import io.javalin.http.Context;
 import io.javalin.http.NotFoundResponse;
-import io.javalin.http.BadRequestResponse;
 import org.example.gateway.config.YamlConfigLoader;
 import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
@@ -339,6 +338,6 @@ public class AdminController {
                 dto.enabled(), dto.headerRules(), dto.circuitBreakerPolicy(),
                 dto.loadBalancerType(), dto.authForwardHeaders(), dto.rateLimitPolicy(),
                 dto.routingType(), dto.cachePolicy(), dto.name(), dto.auditStore(),
-                id, dto.auditEnabled());
+                id, dto.auditEnabled(), dto.metaData());
     }
 }

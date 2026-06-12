@@ -7,25 +7,36 @@
  */
 package org.example.gateway.storage.routes;
 
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.RouteDao;
 import org.example.gateway.routes.dao.RoutesDao;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
 
 /**
  * {@link RouteStorageProvider} backed by EclipseStore on the local filesystem.
  *
- * <p>The entire route list is stored as a binary object graph under
- * {@code storagePath} (default: {@code ./eclipse-store-data}).
- * EclipseStore serialises / deserialises Java objects natively — no JSON
- * is involved — making this option ideal for single-node deployments.
+ * <p>Route data is stored under {@code storagePath/routes} (e.g.
+ * {@code ./eclipse-store-data/routes}), keeping it isolated from the
+ * audit, changelog, and validation-rule sub-stores that share the same
+ * base directory.  EclipseStore does not allow two {@code EmbeddedStorageManager}
+ * instances to share an overlapping directory hierarchy, so each concern
+ * must live in its own leaf directory.
+ *
+ * <p>A one-time automatic migration moves any existing root-level EclipseStore
+ * data into the {@code routes/} subdirectory on first startup.
  *
  * <p>Thread safety is enforced via {@code synchronized} on the shared
  * {@link RoutesDao} list.
@@ -37,14 +48,24 @@ public class EclipseStoreLocalRouteStorageProvider implements RouteStorageProvid
     private final EmbeddedStorageManager storageManager;
     private final RoutesDao root;
 
-    public EclipseStoreLocalRouteStorageProvider(String storagePath) {
-        Path path = Paths.get(storagePath);
-        log.info("Starting EclipseStore local storage at '{}'", path.toAbsolutePath());
+    public EclipseStoreLocalRouteStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadLocalSettings(config, "routes");
+        String storagePath = EclipseStoreConfigSupport.fallback(
+                settings.getStorageDirectory(), EclipseStoreConfigSupport.DEFAULT_STORAGE_DIRECTORY);
+        Path configuredDir = Paths.get(storagePath);
+        migrateRootDataIfPresent(configuredDir);
+        Path effectiveStorageDir = resolveEffectiveRouteStorageDirectory(configuredDir);
+        settings.setStorageDirectory(effectiveStorageDir.toString());
+        log.info("Starting EclipseStore local storage using config '{}'",
+                EclipseStoreConfigSupport.localConfigPath(config, "routes"));
 
         // If this path already has persisted data, EmbeddedStorage restores the graph;
         // otherwise, it starts fresh with the provided root object.
         RoutesDao initialRoot = new RoutesDao();
-        this.storageManager = EmbeddedStorage.start(initialRoot, path);
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                org.eclipse.store.storage.embedded.types.EmbeddedStorageFoundation.New()
+                        .setConfiguration(EclipseStoreConfigSupport.buildLocalStorageConfiguration(settings)),
+                initialRoot);
 
         // After start(), the manager's root() is the *restored* graph (or initialRoot if new).
         RoutesDao storedRoot = storageManager.root();
@@ -52,6 +73,88 @@ public class EclipseStoreLocalRouteStorageProvider implements RouteStorageProvid
 
         log.info("EclipseStore local: loaded {} route(s)", root.getRoutes().size());
     }
+
+    /**
+     * One-time migration: if old root-level EclipseStore route data exists
+     * (identified by the presence of {@code PersistenceTypeDictionary.ptd} at the
+     * base directory, which means routes were previously stored at the root), move
+     * all EclipseStore files into the new {@code routes/} subdirectory.
+     *
+     * <p>Other known sub-stores ({@code audit/}, {@code changelog/},
+     * {@code validationrule/}) are left untouched.
+     */
+    private static void migrateRootDataIfPresent(Path storageDir) {
+        Path routesDir = storageDir.resolve("routes");
+        Path typeDictionary = storageDir.resolve("PersistenceTypeDictionary.ptd");
+
+        // Already migrated, or no old root-level data to migrate.
+        if (!isSharedRootLayout(storageDir) || Files.exists(routesDir) || !Files.exists(typeDictionary)) {
+            return;
+        }
+
+        log.info("Detected legacy EclipseStore route data at '{}' — migrating to '{}'",
+                storageDir, routesDir);
+        try {
+            Files.createDirectories(routesDir);
+
+            // Move the type dictionary file.
+            Files.move(typeDictionary,
+                    routesDir.resolve("PersistenceTypeDictionary.ptd"),
+                    StandardCopyOption.REPLACE_EXISTING);
+
+            // Move every directory that is NOT one of the other known sub-stores.
+            try (var stream = Files.list(storageDir)) {
+                stream.filter(p -> {
+                            String name = p.getFileName().toString();
+                            return Files.isDirectory(p)
+                                    && !name.equals("routes")
+                                    && !name.equals("audit")
+                                    && !name.equals("changelog")
+                                    && !name.equals("validationrule");
+                        })
+                        .forEach(dir -> {
+                            try {
+                                Files.move(dir,
+                                        routesDir.resolve(dir.getFileName()),
+                                        StandardCopyOption.REPLACE_EXISTING);
+                            } catch (IOException e) {
+                                throw new UncheckedIOException(e);
+                            }
+                        });
+            }
+
+            // Move lock file if present.
+            Path lockFile = storageDir.resolve("used.lock");
+            if (Files.exists(lockFile)) {
+                Files.move(lockFile, routesDir.resolve("used.lock"),
+                        StandardCopyOption.REPLACE_EXISTING);
+            }
+
+            log.info("Migration complete: route data is now at '{}'", routesDir);
+        } catch (IOException e) {
+            log.error("Migration failed — please manually move route data from '{}' to '{}'",
+                    storageDir, routesDir);
+            throw new UncheckedIOException("EclipseStore route data migration failed", e);
+        }
+    }
+
+    private static Path resolveEffectiveRouteStorageDirectory(Path configuredDir) {
+        Path nestedRoutesDir = configuredDir.resolve("routes");
+        boolean configuredStoreExists = Files.exists(configuredDir.resolve("PersistenceTypeDictionary.ptd"));
+        boolean nestedStoreExists = Files.exists(nestedRoutesDir.resolve("PersistenceTypeDictionary.ptd"));
+        if (!configuredStoreExists && nestedStoreExists) {
+            log.info("Using nested route store '{}' for backward compatibility", nestedRoutesDir);
+            return nestedRoutesDir;
+        }
+        return configuredDir;
+    }
+
+    private static boolean isSharedRootLayout(Path storageDir) {
+        return Files.isDirectory(storageDir.resolve("audit"))
+                || Files.isDirectory(storageDir.resolve("changelog"))
+                || Files.isDirectory(storageDir.resolve("validationrule"));
+    }
+
 
     @Override
     public List<RouteDao> findAll() {
@@ -116,7 +219,7 @@ public class EclipseStoreLocalRouteStorageProvider implements RouteStorageProvid
                             existing.circuitBreakerPolicy(), existing.loadBalancerType(),
                             existing.authForwardHeaders(), existing.rateLimitPolicy(),
                             existing.routingType(), existing.cachePolicy(), existing.name(),
-                            existing.auditStore(), existing.id(), existing.auditEnabled());
+                            existing.auditStore(), existing.id(), existing.auditEnabled(), existing.metaData());
                     routes.set(i, updated);
                     storageManager.store(routes);
                     log.debug("EclipseStore local: set route '{}' enabled={}", id, enabled);

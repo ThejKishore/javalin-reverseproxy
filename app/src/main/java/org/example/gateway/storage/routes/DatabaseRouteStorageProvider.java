@@ -103,7 +103,7 @@ public class DatabaseRouteStorageProvider implements RouteStorageProvider {
                         row.isEnabled(), dto.headerRules(), dto.circuitBreakerPolicy(),
                         dto.loadBalancerType(), dto.authForwardHeaders(), dto.rateLimitPolicy(),
                         dto.routingType(), dto.cachePolicy(), dto.name(), dto.auditStore(),
-                        dto.id(), dto.auditEnabled());
+                        dto.id(), dto.auditEnabled(), dto.metaData());
             }
             return RouteMapper.routeDtoToRouteDao(dto);
         } catch (Exception e) {

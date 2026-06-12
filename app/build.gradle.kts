@@ -8,6 +8,10 @@ plugins {
     id("buildlogic.java-application-conventions")
 }
 
+val eclipseStoreJvmArgs = listOf(
+    "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"
+)
+
 dependencies {
     implementation(project(":shared"))
     implementation(project(":utilities"))
@@ -62,4 +66,9 @@ dependencies {
 application {
     // Define the main class for the application.
     mainClass = "org.example.gateway.GatewayApp"
+    applicationDefaultJvmArgs = eclipseStoreJvmArgs
+}
+
+tasks.withType<Test>().configureEach {
+    jvmArgs(eclipseStoreJvmArgs)
 }

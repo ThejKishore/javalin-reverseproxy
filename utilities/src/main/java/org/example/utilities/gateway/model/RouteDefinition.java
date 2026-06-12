@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Complete definition of a single gateway route.
@@ -101,6 +102,12 @@ public class RouteDefinition {
     @JsonProperty("http-validation-policy")
     private HttpValidationPolicy httpValidationPolicy;
 
+    /**
+     * Optional metadata used by downstream tooling (OpenAPI consolidation, health/prometheus pointers, skip flags).
+     */
+    @JsonProperty("meta-data")
+    private Map<String, String> metaData;
+
     // --- Getters & setters ---
 
     public String getId() { return id; }
@@ -169,9 +176,11 @@ public class RouteDefinition {
     public HttpValidationPolicy getHttpValidationPolicy() { return httpValidationPolicy; }
     public void setHttpValidationPolicy(HttpValidationPolicy httpValidationPolicy) { this.httpValidationPolicy = httpValidationPolicy; }
 
+    public Map<String, String> getMetaData() { return metaData; }
+    public void setMetaData(Map<String, String> metaData) { this.metaData = metaData; }
+
     @Override
     public String toString() {
         return "RouteDefinition{id='" + id + "', name='" + name + "', pathPattern='" + pathPattern + "', enabled=" + enabled + '}';
     }
 }
-

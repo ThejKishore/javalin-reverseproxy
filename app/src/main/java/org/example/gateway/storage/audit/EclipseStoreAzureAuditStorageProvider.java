@@ -8,10 +8,12 @@
 package org.example.gateway.storage.audit;
 
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import org.eclipse.store.afs.azure.storage.types.AzureStorageConnector;
+import org.eclipse.serializer.afs.types.ADirectory;
 import org.eclipse.store.afs.blobstore.types.BlobStoreFileSystem;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.AuditLogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,24 +33,24 @@ public class EclipseStoreAzureAuditStorageProvider implements AuditStorageProvid
     private final EmbeddedStorageManager storageManager;
     private final AuditStoreRoot root;
 
-    public EclipseStoreAzureAuditStorageProvider(String connectionString, String containerName) {
-        String auditContainer = containerName + "-audit";
+    public EclipseStoreAzureAuditStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadAzureSettings(config, "audit");
+        String auditContainer = EclipseStoreConfigSupport.suffixedContainer(settings.getAzureContainer(), "-audit");
         log.info("Starting EclipseStore Azure audit storage (container='{}')", auditContainer);
 
-        var blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
-        AzureStorageConnector connector = AzureStorageConnector.New(blobServiceClient);
-        BlobStoreFileSystem fileSystem = BlobStoreFileSystem.New(connector);
+        BlobStoreFileSystem fileSystem = EclipseStoreConfigSupport.newAzureFileSystem(settings);
+        ADirectory directory = fileSystem.ensureDirectoryPath(auditContainer);
 
         AuditStoreRoot initialRoot = new AuditStoreRoot();
-        this.storageManager = EmbeddedStorage.start(initialRoot,
-                fileSystem.ensureDirectoryPath(auditContainer));
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                EclipseStoreConfigSupport.buildAzureFoundation(settings, directory),
+                initialRoot);
 
         Object stored = storageManager.root();
         this.root = stored instanceof AuditStoreRoot r ? r : initialRoot;
         log.info("EclipseStore Azure audit: loaded {} entries", root.getEntries().size());
     }
+
 
     @Override
     public void insert(AuditLogEntry entry) {

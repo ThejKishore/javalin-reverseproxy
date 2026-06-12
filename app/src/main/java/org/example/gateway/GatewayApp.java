@@ -12,9 +12,11 @@ import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.example.gateway.api.AdminController;
 import org.example.gateway.api.AuditController;
 import org.example.gateway.api.HealthController;
+import org.example.gateway.api.ConsolidatedOpenApiController;
 import org.example.gateway.config.GatewayConfig;
 import org.example.gateway.config.HazelcastConfig;
 import org.example.gateway.config.YamlConfigLoader;
+import org.example.gateway.config.OpenApiExportConfig;
 import org.example.gateway.db.DatabaseManager;
 import org.example.gateway.proxy.ProxyHandler;
 import org.example.gateway.registry.RouteLoader;
@@ -150,6 +152,9 @@ public class GatewayApp {
                 validationRuleStore, changeLogProvider, validationRuleStorageProvider);
         AuditController audit = new AuditController(auditProvider, changeLogProvider);
         HealthController health = new HealthController(registry);
+        OpenApiExportConfig openApiExportConfig = config.getOpenApiExport();
+        ConsolidatedOpenApiController consolidatedOpenApi =
+                new ConsolidatedOpenApiController(registry, openApiExportConfig);
 
         // Handlers & controllers
         ProxyHandler proxyHandler = new ProxyHandler(registry, jdbi);
@@ -199,6 +204,9 @@ public class GatewayApp {
                     });
                 })
             );
+
+            // Secured consolidated OpenAPI export (for APIM registration)
+            cfg.routes.get(openApiExportConfig.getPath(), consolidatedOpenApi::getConsolidatedSpec);
 
             // ── Catch-all HTTP proxy (all verbs, slash-spanning param) ─────────
             cfg.routes.get("/<path>", proxyHandler);

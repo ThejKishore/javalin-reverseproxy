@@ -70,6 +70,10 @@ public class GatewayConfig {
     @JsonProperty("csp-policy")
     private CspPolicy cspPolicy;
 
+    /** Consolidated OpenAPI endpoint settings (path + access token auth). */
+    @JsonProperty("openapi-export")
+    private OpenApiExportConfig openApiExport = new OpenApiExportConfig();
+
     /** Inline route definitions — only used when config-source=yaml. */
     @JsonProperty("routes")
     private List<RouteDefinition> routes = new ArrayList<>();
@@ -102,6 +106,9 @@ public class GatewayConfig {
 
     public CspPolicy getCspPolicy() { return cspPolicy; }
     public void setCspPolicy(CspPolicy cspPolicy) { this.cspPolicy = cspPolicy; }
+
+    public OpenApiExportConfig getOpenApiExport() { return openApiExport; }
+    public void setOpenApiExport(OpenApiExportConfig openApiExport) { this.openApiExport = openApiExport; }
 
     public List<RouteDefinition> getRoutes() { return routes; }
     public void setRoutes(List<RouteDefinition> routes) { this.routes = routes; }

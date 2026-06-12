@@ -18,6 +18,21 @@ gateway:
     username: sa
     password: ""
 
+  # ── EclipseStore configuration (used when config-source is eclipse-store-*) ──
+  eclipse-store:
+    routes:
+      local-config: "eclipsestore/routes-storage-local.yaml"
+      azure-config: "eclipsestore/routes-storage-azure.yaml"
+    audit:
+      local-config: "eclipsestore/audit-storage-local.yaml"
+      azure-config: "eclipsestore/audit-storage-azure.yaml"
+    changelog:
+      local-config: "eclipsestore/changelog-storage-local.yaml"
+      azure-config: "eclipsestore/changelog-storage-azure.yaml"
+    validationrule:
+      local-config: "eclipsestore/validationrule-storage-local.yaml"
+      azure-config: "eclipsestore/validationrule-storage-azure.yaml"
+
   # ── Hazelcast — distributed CSRF token store ──────────────────────────────
   hazelcast:
     enabled: true                      # Set false to disable CSRF filter entirely
@@ -63,6 +78,12 @@ gateway:
     exclude-paths:                     # Paths exempt from CSP injection (prefix match)
       - /gateway/health
       - /gateway/admin
+
+  openapi-export:
+    enabled: true
+    path: /gateway/admin/openapi
+    auth-header: Authorization
+    access-token: "change-me-openapi-export-token"
 
   routes:
     - id: example-service
@@ -197,4 +218,3 @@ gateway:
         enabled: true
         ttl-seconds: 60
         cache-key-strategy: METHOD_PATH_QUERY
-
