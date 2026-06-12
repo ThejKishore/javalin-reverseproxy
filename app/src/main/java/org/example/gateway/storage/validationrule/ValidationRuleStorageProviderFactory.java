@@ -48,8 +48,7 @@ public class ValidationRuleStorageProviderFactory {
             }
             case "eclipse-store-lcl" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
-                String path = esConfig != null ? esConfig.getStoragePath() : "./eclipse-store-data";
-                yield new EclipseStoreLocalValidationRuleStorageProvider(path);
+                yield new EclipseStoreLocalValidationRuleStorageProvider(esConfig);
             }
             case "eclipse-store-azure" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
@@ -57,8 +56,7 @@ public class ValidationRuleStorageProviderFactory {
                     throw new IllegalStateException(
                             "eclipse-store.azure-connection-string is required for eclipse-store-azure");
                 }
-                yield new EclipseStoreAzureValidationRuleStorageProvider(
-                        esConfig.getAzureConnectionString(), esConfig.getAzureContainer());
+                yield new EclipseStoreAzureValidationRuleStorageProvider(esConfig);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown config-source '" + source + "'");

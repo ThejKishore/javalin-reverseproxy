@@ -52,5 +52,34 @@ class YamlConfigLoaderTest {
         assertEquals("h2", config.getDatasource().getType());
         assertNotNull(config.getDatasource().getUrl());
     }
+
+    @Test
+    void eclipseStoreUsesPerStoreYamlConfigPaths() throws Exception {
+        GatewayConfig config = new YamlConfigLoader().load();
+
+        assertNotNull(config.getEclipseStore());
+        assertEquals("eclipsestore/routes-storage-local.yaml",
+                config.getEclipseStore().getRoutes().getLocalConfig());
+        assertEquals("eclipsestore/routes-storage-azure.yaml",
+                config.getEclipseStore().getRoutes().getAzureConfig());
+        assertEquals("eclipsestore/audit-storage-local.yaml",
+                config.getEclipseStore().getAudit().getLocalConfig());
+        assertEquals("eclipsestore/changelog-storage-azure.yaml",
+                config.getEclipseStore().getChangelog().getAzureConfig());
+        assertEquals("eclipsestore/validationrule-storage-local.yaml",
+                config.getEclipseStore().getValidationrule().getLocalConfig());
+    }
+
+    @Test
+    void storeSpecificStorageYamlLoadsOfficialKeys() {
+        EclipseStoreStorageSettings settings = EclipseStoreStorageConfigurationLoader
+                .load("eclipsestore/audit-storage-local.yaml");
+
+        assertEquals("./eclipse-store-data/audit", settings.getStorageDirectory());
+        assertEquals(Integer.valueOf(4), settings.getChannelCount());
+        assertEquals("channel_", settings.getDataFilePrefix());
+        assertEquals("transactions_", settings.getTransactionFilePrefix());
+        assertEquals(Integer.valueOf(104857600), settings.getTransactionFileMaximumSize());
+    }
 }
 

@@ -48,8 +48,7 @@ public class AuditStorageProviderFactory {
             }
             case "eclipse-store-lcl" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
-                String path = esConfig != null ? esConfig.getStoragePath() : "./eclipse-store-data";
-                yield new EclipseStoreLocalAuditStorageProvider(path);
+                yield new EclipseStoreLocalAuditStorageProvider(esConfig);
             }
             case "eclipse-store-azure" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
@@ -57,8 +56,7 @@ public class AuditStorageProviderFactory {
                     throw new IllegalStateException(
                             "eclipse-store.azure-connection-string is required for eclipse-store-azure");
                 }
-                yield new EclipseStoreAzureAuditStorageProvider(
-                        esConfig.getAzureConnectionString(), esConfig.getAzureContainer());
+                yield new EclipseStoreAzureAuditStorageProvider(esConfig);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown config-source '" + source + "'");

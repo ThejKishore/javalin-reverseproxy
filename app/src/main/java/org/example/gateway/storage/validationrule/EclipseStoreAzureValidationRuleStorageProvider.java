@@ -7,11 +7,12 @@
  */
 package org.example.gateway.storage.validationrule;
 
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import org.eclipse.store.afs.azure.storage.types.AzureStorageConnector;
+import org.eclipse.serializer.afs.types.ADirectory;
 import org.eclipse.store.afs.blobstore.types.BlobStoreFileSystem;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.ValidationRuleEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,24 +32,24 @@ public class EclipseStoreAzureValidationRuleStorageProvider implements Validatio
     private final EmbeddedStorageManager storageManager;
     private final ValidationRuleStoreRoot root;
 
-    public EclipseStoreAzureValidationRuleStorageProvider(String connectionString, String containerName) {
-        String ruleContainer = containerName + "-validationrule";
+    public EclipseStoreAzureValidationRuleStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadAzureSettings(config, "validationrule");
+        String ruleContainer = EclipseStoreConfigSupport.suffixedContainer(settings.getAzureContainer(), "-validationrule");
         log.info("Starting EclipseStore Azure validation-rule storage (container='{}')", ruleContainer);
 
-        var blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
-        AzureStorageConnector connector = AzureStorageConnector.New(blobServiceClient);
-        BlobStoreFileSystem fileSystem = BlobStoreFileSystem.New(connector);
+        BlobStoreFileSystem fileSystem = EclipseStoreConfigSupport.newAzureFileSystem(settings);
+        ADirectory directory = fileSystem.ensureDirectoryPath(ruleContainer);
 
         ValidationRuleStoreRoot initialRoot = new ValidationRuleStoreRoot();
-        this.storageManager = EmbeddedStorage.start(initialRoot,
-                fileSystem.ensureDirectoryPath(ruleContainer));
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                EclipseStoreConfigSupport.buildAzureFoundation(settings, directory),
+                initialRoot);
 
         Object stored = storageManager.root();
         this.root = stored instanceof ValidationRuleStoreRoot r ? r : initialRoot;
         log.info("EclipseStore Azure validation-rule: loaded {} entries", root.getEntries().size());
     }
+
 
     @Override
     public List<ValidationRuleEntry> findAll() {

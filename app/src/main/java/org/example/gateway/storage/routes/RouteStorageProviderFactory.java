@@ -50,8 +50,7 @@ public class RouteStorageProviderFactory {
             }
             case "eclipse-store-lcl" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
-                String path = esConfig != null ? esConfig.getStoragePath() : "./eclipse-store-data";
-                yield new EclipseStoreLocalRouteStorageProvider(path);
+                yield new EclipseStoreLocalRouteStorageProvider(esConfig);
             }
             case "eclipse-store-azure" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
@@ -59,9 +58,7 @@ public class RouteStorageProviderFactory {
                     throw new IllegalStateException(
                             "eclipse-store.azure-connection-string is required for eclipse-store-azure");
                 }
-                yield new EclipseStoreAzureRouteStorageProvider(
-                        esConfig.getAzureConnectionString(),
-                        esConfig.getAzureContainer());
+                yield new EclipseStoreAzureRouteStorageProvider(esConfig);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown config-source '" + source + "'. Valid values: database, eclipse-store-lcl, eclipse-store-azure");

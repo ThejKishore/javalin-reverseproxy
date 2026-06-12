@@ -7,13 +7,14 @@
  */
 package org.example.gateway.storage.audit;
 
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.AuditLogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 
@@ -31,11 +32,15 @@ public class EclipseStoreLocalAuditStorageProvider implements AuditStorageProvid
     private final EmbeddedStorageManager storageManager;
     private final AuditStoreRoot root;
 
-    public EclipseStoreLocalAuditStorageProvider(String storagePath) {
-        var path = Paths.get(storagePath, "audit");
-        log.info("Starting EclipseStore local audit storage at '{}'", path.toAbsolutePath());
+    public EclipseStoreLocalAuditStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadLocalSettings(config, "audit");
+        log.info("Starting EclipseStore local audit storage using config '{}'",
+                EclipseStoreConfigSupport.localConfigPath(config, "audit"));
         AuditStoreRoot initialRoot = new AuditStoreRoot();
-        this.storageManager = EmbeddedStorage.start(initialRoot, path);
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                org.eclipse.store.storage.embedded.types.EmbeddedStorageFoundation.New()
+                        .setConfiguration(EclipseStoreConfigSupport.buildLocalStorageConfiguration(settings)),
+                initialRoot);
         Object stored = storageManager.root();
         this.root = stored instanceof AuditStoreRoot r ? r : initialRoot;
         log.info("EclipseStore local audit: loaded {} entries", root.getEntries().size());

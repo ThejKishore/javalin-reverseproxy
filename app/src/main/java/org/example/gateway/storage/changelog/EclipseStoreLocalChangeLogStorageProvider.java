@@ -7,13 +7,14 @@
  */
 package org.example.gateway.storage.changelog;
 
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.ChangeLogEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.List;
 
@@ -31,15 +32,20 @@ public class EclipseStoreLocalChangeLogStorageProvider implements ChangeLogStora
     private final EmbeddedStorageManager storageManager;
     private final ChangeLogStoreRoot root;
 
-    public EclipseStoreLocalChangeLogStorageProvider(String storagePath) {
-        var path = Paths.get(storagePath, "changelog");
-        log.info("Starting EclipseStore local changelog storage at '{}'", path.toAbsolutePath());
+    public EclipseStoreLocalChangeLogStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadLocalSettings(config, "changelog");
+        log.info("Starting EclipseStore local changelog storage using config '{}'",
+                EclipseStoreConfigSupport.localConfigPath(config, "changelog"));
         ChangeLogStoreRoot initialRoot = new ChangeLogStoreRoot();
-        this.storageManager = EmbeddedStorage.start(initialRoot, path);
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                org.eclipse.store.storage.embedded.types.EmbeddedStorageFoundation.New()
+                        .setConfiguration(EclipseStoreConfigSupport.buildLocalStorageConfiguration(settings)),
+                initialRoot);
         Object stored = storageManager.root();
         this.root = stored instanceof ChangeLogStoreRoot r ? r : initialRoot;
         log.info("EclipseStore local changelog: loaded {} entries", root.getEntries().size());
     }
+
 
     @Override
     public void insert(ChangeLogEntry entry) {

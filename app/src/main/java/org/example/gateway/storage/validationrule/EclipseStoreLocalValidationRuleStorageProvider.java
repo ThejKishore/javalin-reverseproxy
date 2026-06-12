@@ -7,13 +7,14 @@
  */
 package org.example.gateway.storage.validationrule;
 
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.ValidationRuleEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 
@@ -30,15 +31,20 @@ public class EclipseStoreLocalValidationRuleStorageProvider implements Validatio
     private final EmbeddedStorageManager storageManager;
     private final ValidationRuleStoreRoot root;
 
-    public EclipseStoreLocalValidationRuleStorageProvider(String storagePath) {
-        var path = Paths.get(storagePath, "validationrule");
-        log.info("Starting EclipseStore local validation-rule storage at '{}'", path.toAbsolutePath());
+    public EclipseStoreLocalValidationRuleStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadLocalSettings(config, "validationrule");
+        log.info("Starting EclipseStore local validation-rule storage using config '{}'",
+                EclipseStoreConfigSupport.localConfigPath(config, "validationrule"));
         ValidationRuleStoreRoot initialRoot = new ValidationRuleStoreRoot();
-        this.storageManager = EmbeddedStorage.start(initialRoot, path);
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                org.eclipse.store.storage.embedded.types.EmbeddedStorageFoundation.New()
+                        .setConfiguration(EclipseStoreConfigSupport.buildLocalStorageConfiguration(settings)),
+                initialRoot);
         Object stored = storageManager.root();
         this.root = stored instanceof ValidationRuleStoreRoot r ? r : initialRoot;
         log.info("EclipseStore local validation-rule: loaded {} entries", root.getEntries().size());
     }
+
 
     @Override
     public List<ValidationRuleEntry> findAll() {

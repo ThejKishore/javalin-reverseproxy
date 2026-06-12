@@ -48,8 +48,7 @@ public class ChangeLogStorageProviderFactory {
             }
             case "eclipse-store-lcl" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
-                String path = esConfig != null ? esConfig.getStoragePath() : "./eclipse-store-data";
-                yield new EclipseStoreLocalChangeLogStorageProvider(path);
+                yield new EclipseStoreLocalChangeLogStorageProvider(esConfig);
             }
             case "eclipse-store-azure" -> {
                 EclipseStoreConfig esConfig = config.getEclipseStore();
@@ -57,8 +56,7 @@ public class ChangeLogStorageProviderFactory {
                     throw new IllegalStateException(
                             "eclipse-store.azure-connection-string is required for eclipse-store-azure");
                 }
-                yield new EclipseStoreAzureChangeLogStorageProvider(
-                        esConfig.getAzureConnectionString(), esConfig.getAzureContainer());
+                yield new EclipseStoreAzureChangeLogStorageProvider(esConfig);
             }
             default -> throw new IllegalArgumentException(
                     "Unknown config-source '" + source + "'");

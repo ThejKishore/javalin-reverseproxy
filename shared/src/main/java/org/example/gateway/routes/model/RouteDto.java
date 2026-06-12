@@ -1,6 +1,8 @@
 package org.example.gateway.routes.model;
 
 import java.util.List;
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record RouteDto(
@@ -30,7 +32,7 @@ public record RouteDto(
 	String loadBalancerType,
 
 	@JsonProperty("auth-forward-headers")
-	List<Object> authForwardHeaders,
+	List<String> authForwardHeaders,
 
 	@JsonProperty("rate-limit-policy")
 	RateLimitPolicy rateLimitPolicy,
@@ -51,6 +53,19 @@ public record RouteDto(
 	String id,
 
 	@JsonProperty("audit-enabled")
-	boolean auditEnabled
+	boolean auditEnabled,
+
+	/**
+	 * This map is used to capture details like
+	 *  context-path: /domain/servicename
+	 *  health-endpoint: /actuator/health
+	 *  prometheus-endpoint: /actuator/prometheus
+	 *  openapi-spec-endpoint: /openapi(javalin) or /api-docs(springboot)
+	 *  skip-api: "true"
+	 *  skip-paths: /admin,/internal
+	 */
+	@JsonProperty("meta-data")
+    Map<String,String> metaData
+
 ) {
 }

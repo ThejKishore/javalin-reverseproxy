@@ -7,11 +7,12 @@
  */
 package org.example.gateway.storage.routes;
 
-import com.azure.storage.blob.BlobServiceClientBuilder;
-import org.eclipse.store.afs.azure.storage.types.AzureStorageConnector;
+import org.eclipse.serializer.afs.types.ADirectory;
 import org.eclipse.store.afs.blobstore.types.BlobStoreFileSystem;
-import org.eclipse.store.storage.embedded.types.EmbeddedStorage;
 import org.eclipse.store.storage.embedded.types.EmbeddedStorageManager;
+import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.EclipseStoreConfigSupport;
+import org.example.gateway.config.EclipseStoreStorageSettings;
 import org.example.gateway.routes.dao.RouteDao;
 import org.example.gateway.routes.dao.RoutesDao;
 import org.slf4j.Logger;
@@ -40,26 +41,26 @@ public class EclipseStoreAzureRouteStorageProvider implements RouteStorageProvid
     private final EmbeddedStorageManager storageManager;
     private final RoutesDao root;
 
-    public EclipseStoreAzureRouteStorageProvider(String connectionString, String containerName) {
-        log.info("Starting EclipseStore Azure storage (container='{}')", containerName);
+    public EclipseStoreAzureRouteStorageProvider(EclipseStoreConfig config) {
+        EclipseStoreStorageSettings settings = EclipseStoreConfigSupport.loadAzureSettings(config, "routes");
+        String resolvedContainer = EclipseStoreConfigSupport.fallback(
+                settings.getAzureContainer(), EclipseStoreConfigSupport.DEFAULT_AZURE_CONTAINER);
+        log.info("Starting EclipseStore Azure storage (container='{}')", resolvedContainer);
 
-        // Build the Azure Blob Storage connector and wrap it as an ADirectory for EmbeddedStorage.
-        var blobServiceClient = new BlobServiceClientBuilder()
-                .connectionString(connectionString)
-                .buildClient();
-
-        AzureStorageConnector connector = AzureStorageConnector.New(blobServiceClient);
-        BlobStoreFileSystem fileSystem = BlobStoreFileSystem.New(connector);
+        BlobStoreFileSystem fileSystem = EclipseStoreConfigSupport.newAzureFileSystem(settings);
+        ADirectory directory = fileSystem.ensureDirectoryPath(resolvedContainer);
 
         RoutesDao initialRoot = new RoutesDao();
-        this.storageManager = EmbeddedStorage.start(initialRoot,
-                fileSystem.ensureDirectoryPath(containerName));
+        this.storageManager = EclipseStoreConfigSupport.createAndStartStorageManager(
+                EclipseStoreConfigSupport.buildAzureFoundation(settings, directory),
+                initialRoot);
 
         Object storedRoot = storageManager.root();
         this.root = storedRoot instanceof RoutesDao ecRoot ? ecRoot : initialRoot;
 
         log.info("EclipseStore Azure: loaded {} route(s)", root.getRoutes().size());
     }
+
 
     @Override
     public List<RouteDao> findAll() {
@@ -124,7 +125,7 @@ public class EclipseStoreAzureRouteStorageProvider implements RouteStorageProvid
                             existing.circuitBreakerPolicy(), existing.loadBalancerType(),
                             existing.authForwardHeaders(), existing.rateLimitPolicy(),
                             existing.routingType(), existing.cachePolicy(), existing.name(),
-                            existing.auditStore(), existing.id(), existing.auditEnabled());
+                            existing.auditStore(), existing.id(), existing.auditEnabled(), existing.metaData());
                     routes.set(i, updated);
                     storageManager.store(routes);
                     log.debug("EclipseStore Azure: set route '{}' enabled={}", id, enabled);

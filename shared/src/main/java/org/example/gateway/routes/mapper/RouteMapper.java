@@ -125,7 +125,8 @@ public class RouteMapper {
                 nvl(newRoute.name(), oldRoute.name()),
                 nvl(newRoute.auditStore(), oldRoute.auditStore()),
                 nvl(newRoute.id(), oldRoute.id()),
-                newRoute.auditEnabled() != oldRoute.auditEnabled() ? newRoute.auditEnabled() : oldRoute.auditEnabled()
+                newRoute.auditEnabled() != oldRoute.auditEnabled() ? newRoute.auditEnabled() : oldRoute.auditEnabled(),
+                nvl(newRoute.metaData(), oldRoute.metaData())
         );
     }
 
@@ -174,7 +175,8 @@ public class RouteMapper {
                 dto.name(),
                 dto.auditStore(),
                 dto.id(),
-                dto.auditEnabled());
+                dto.auditEnabled(),
+                dto.metaData());
     }
 
     /**
@@ -203,7 +205,8 @@ public class RouteMapper {
                 dao.name(),
                 dao.auditStore(),
                 dao.id(),
-                dao.auditEnabled());
+                dao.auditEnabled(),
+                dao.metaData());
     }
 
     // ── Private conversion helpers ────────────────────────────────────────────

@@ -11,35 +11,14 @@ import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Configuration for EclipseStore persistence backends.
- * Used when {@code config-source} is {@code eclipse-store-lcl} or {@code eclipse-store-azure}.
+ * Subset of official EclipseStore storage properties consumed by the gateway.
+ * These settings are loaded from per-store YAML files.
  */
-public class EclipseStoreConfig {
+public class EclipseStoreStorageSettings {
 
-    @JsonProperty("routes")
-    private EclipseStoreStoreConfigPaths routes = new EclipseStoreStoreConfigPaths(
-            "eclipsestore/routes-storage-local.yaml",
-            "eclipsestore/routes-storage-azure.yaml");
-
-    @JsonProperty("audit")
-    private EclipseStoreStoreConfigPaths audit = new EclipseStoreStoreConfigPaths(
-            "eclipsestore/audit-storage-local.yaml",
-            "eclipsestore/audit-storage-azure.yaml");
-
-    @JsonProperty("changelog")
-    private EclipseStoreStoreConfigPaths changelog = new EclipseStoreStoreConfigPaths(
-            "eclipsestore/changelog-storage-local.yaml",
-            "eclipsestore/changelog-storage-azure.yaml");
-
-    @JsonProperty("validationrule")
-    private EclipseStoreStoreConfigPaths validationrule = new EclipseStoreStoreConfigPaths(
-            "eclipsestore/validationrule-storage-local.yaml",
-            "eclipsestore/validationrule-storage-azure.yaml");
-
-    /** EclipseStore storage base directory (official key: storage-directory). */
     @JsonProperty("storage-directory")
     @JsonAlias("storage-path")
-    private String storageDirectory = "./eclipse-store-data";
+    private String storageDirectory;
 
     @JsonProperty("deletion-directory")
     private String deletionDirectory;
@@ -116,25 +95,11 @@ public class EclipseStoreConfig {
     @JsonProperty("transaction-file-maximum-size")
     private Integer transactionFileMaximumSize;
 
-    /** Azure Blob Storage connection string (used when config-source = eclipse-store-azure). */
     @JsonProperty("azure-connection-string")
     private String azureConnectionString;
 
-    /** Azure Blob Storage container name (used when config-source = eclipse-store-azure). */
     @JsonProperty("azure-container")
-    private String azureContainer = "gateway-routes";
-
-    public EclipseStoreStoreConfigPaths getRoutes() { return routes; }
-    public void setRoutes(EclipseStoreStoreConfigPaths routes) { this.routes = routes; }
-
-    public EclipseStoreStoreConfigPaths getAudit() { return audit; }
-    public void setAudit(EclipseStoreStoreConfigPaths audit) { this.audit = audit; }
-
-    public EclipseStoreStoreConfigPaths getChangelog() { return changelog; }
-    public void setChangelog(EclipseStoreStoreConfigPaths changelog) { this.changelog = changelog; }
-
-    public EclipseStoreStoreConfigPaths getValidationrule() { return validationrule; }
-    public void setValidationrule(EclipseStoreStoreConfigPaths validationrule) { this.validationrule = validationrule; }
+    private String azureContainer;
 
     public String getStorageDirectory() { return storageDirectory; }
     public void setStorageDirectory(String storageDirectory) { this.storageDirectory = storageDirectory; }
@@ -212,15 +177,12 @@ public class EclipseStoreConfig {
     public void setDataFileCleanupHeadFile(Boolean dataFileCleanupHeadFile) { this.dataFileCleanupHeadFile = dataFileCleanupHeadFile; }
 
     public Integer getTransactionFileMaximumSize() { return transactionFileMaximumSize; }
-    public void setTransactionFileMaximumSize(Integer transactionFileMaximumSize) {
-        this.transactionFileMaximumSize = transactionFileMaximumSize;
-    }
+    public void setTransactionFileMaximumSize(Integer transactionFileMaximumSize) { this.transactionFileMaximumSize = transactionFileMaximumSize; }
 
     public String getAzureConnectionString() { return azureConnectionString; }
-    public void setAzureConnectionString(String azureConnectionString) {
-        this.azureConnectionString = azureConnectionString;
-    }
+    public void setAzureConnectionString(String azureConnectionString) { this.azureConnectionString = azureConnectionString; }
 
     public String getAzureContainer() { return azureContainer; }
     public void setAzureContainer(String azureContainer) { this.azureContainer = azureContainer; }
 }
+
