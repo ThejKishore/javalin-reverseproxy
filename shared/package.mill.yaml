@@ -1,0 +1,9 @@
+extends: millbuild.ProjectBaseModule
+mvnDeps:
+- io.javalin:javalin-bundle:7.1.0
+- com.fasterxml.jackson.core:jackson-databind:2.17.0
+
+object test:
+  extends: ProjectBaseTests
+  mvnDeps:
+  - org.assertj:assertj-core:3.25.3

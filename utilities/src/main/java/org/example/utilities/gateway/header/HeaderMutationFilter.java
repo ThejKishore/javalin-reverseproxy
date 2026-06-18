@@ -14,7 +14,6 @@ import org.example.utilities.gateway.model.HeaderRules;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 /**
  * Adds / removes headers on the upstream request (before forwarding) and on the
@@ -39,10 +38,10 @@ public class HeaderMutationFilter implements GatewayFilter {
         chain.proceed(ctx);
 
         // -- RESPONSE: add / exclude headers received from upstream ---------------
-        Map<String, String> addResponse = rules.getAddResponse();
+        List<HeaderRules.HeaderEntry> addResponse = rules.getAddResponse();
         if (addResponse != null) {
-            addResponse.forEach((name, value) ->
-                    ctx.getUpstreamResponseHeaders().put(name, List.of(value)));
+            addResponse.forEach(e ->
+                    ctx.getUpstreamResponseHeaders().put(e.getName(), List.of(e.getValue())));
         }
 
         List<String> excludeResponse = rules.getExcludeResponse();

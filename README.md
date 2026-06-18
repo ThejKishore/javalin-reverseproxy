@@ -9,6 +9,30 @@ A **production-ready, fully-featured API reverse proxy** built on
 
 ---
 
+## 📚 Documentation
+
+All supplementary docs live in the [`docs/`](./docs/) folder. Start here and follow the links:
+
+| Document | Description |
+|---|---|
+| [Quick Start Guide](./docs/QUICK_START.md) | How to run, access the UI, create routes, troubleshoot |
+| [Project Summary](./docs/PROJECT_SUMMARY.md) | High-level overview, goals, and scope |
+| [Implementation Details](./docs/README_IMPLEMENTATION.md) | Architecture, API endpoints, file structure, color palette |
+| [Completion Report](./docs/COMPLETION_REPORT.md) | Executive summary, requirements completed, QA results |
+| [UI Light Theme Changes](./docs/UI_LIGHT_THEME_CHANGES.md) | CSS changes, color palette reference |
+| [Light Theme Migration](./docs/LIGHT_THEME_MIGRATION.md) | Dark→light migration, component-by-component breakdown |
+| [UI Refactoring Summary](./docs/UI_REFACTORING_SUMMARY.md) | UI refactoring changes summary |
+| [Visual Comparison](./docs/VISUAL_COMPARISON.md) | Before/after visual comparisons |
+| [Verification Checklist](./docs/VERIFICATION_CHECKLIST.md) | Final verification and sign-off checklist |
+| [Audit Testing Guide](./docs/AUDIT_TESTING_GUIDE.md) | How to test audit functionality |
+| [Audit Checklist](./docs/AUDIT_COMPREHENSIVE_CHECKLIST.md) | Comprehensive audit checklist |
+| [Delivery Manifest](./docs/DELIVERY_MANIFEST.md) | Files delivered and their purpose |
+| [Implementation File Manifest](./docs/IMPLEMENTATION_FILE_MANIFEST.md) | All implementation files listed |
+| [UI Plan](./docs/ui-plan.md) | UI planning notes |
+| [UI Dashboard](./docs/ui-dashboard.md) | Dashboard design notes |
+
+---
+
 ## Table of Contents
 
 1. [Features](#features)
@@ -25,14 +49,16 @@ A **production-ready, fully-featured API reverse proxy** built on
 12. [Tracing & Forwarded Headers](#tracing--forwarded-headers)
 13. [Auditing](#auditing)
 14. [Authentication Header Forwarding](#authentication-header-forwarding)
-15. [WebSocket Proxying](#websocket-proxying)
-16. [Dynamic Route Management (Admin API)](#dynamic-route-management-admin-api)
-17. [Health Checks](#health-checks)
-18. [Database-Backed Routes](#database-backed-routes)
-19. [Kubernetes Deployment](#kubernetes-deployment)
-20. [Building & Running](#building--running)
-21. [Testing](#testing)
-22. [Module Structure](#module-structure)
+15. [Security Filters](#security-filters)
+16. [WebSocket Proxying](#websocket-proxying)
+17. [Dynamic Route Management (Admin API)](#dynamic-route-management-admin-api)
+18. [Security Validation Rules API](#security-validation-rules-api)
+19. [Health Checks](#health-checks)
+20. [Database-Backed Routes](#database-backed-routes)
+21. [Kubernetes Deployment](#kubernetes-deployment)
+22. [Building & Running](#building--running)
+23. [Testing](#testing)
+24. [Module Structure](#module-structure)
 
 ---
 
@@ -52,6 +78,7 @@ A **production-ready, fully-featured API reverse proxy** built on
 | **Tracing** | Propagates / generates `X-Request-ID` and `X-Trace-ID` |
 | **Forwarded-For** | Injects `X-Forwarded-For` and `X-Real-IP` |
 | **Auth Forwarding** | Configurable list of auth headers forwarded verbatim |
+| **Security Filters** | Global or per-route JWT, CSRF, CSP, and HTTP input blacklist validation |
 | **Auditing** | Records request/response metadata to database or log file |
 | **WebSocket** | Full bidirectional WebSocket proxying via OkHttp |
 | **HTTP/2 & HTTPS** | Transparent via OkHttp — no extra configuration needed |
@@ -82,15 +109,19 @@ Client
                 │
                 ▼
    ┌────────── Filter Chain ────────────────────────────────────────┐
-   │  TracingFilter          (inject X-Request-ID, X-Trace-ID)      │
-   │  SlidingWindowRateLimiter  (optional, per-route)               │
-   │  CircuitBreakerGatewayFilter  (optional, per-route)            │
-   │  CacheGatewayFilter     (optional, GET only)                   │
-   │  ForwardedForFilter     (X-Forwarded-For / X-Real-IP)          │
-   │  HeaderMutationFilter   (add/exclude request & response hdrs)  │
-   │  TransformGatewayFilter (pluggable body transforms)            │
-   │  DedupeResponseHeadersFilter  (optional)                       │
-   │  ProxyFilter            ← terminal: LoadBalancer + OkHttp      │
+   │  JwtAuthFilter         (global or per-route — fail fast)                │
+   │  CsrfGatewayFilter     (global or per-route — unsafe methods only)      │
+   │  TracingFilter         (inject X-Request-ID, X-Trace-ID)                │
+   │  SlidingWindowRateLimiter  (optional, per-route)                        │
+   │  CircuitBreakerGatewayFilter  (optional, per-route)                     │
+   │  CacheGatewayFilter     (optional, GET only)                            │
+   │  ForwardedForFilter     (X-Forwarded-For / X-Real-IP)                   │
+   │  HttpValidationFilter   (optional blacklist validation)                  │
+   │  HeaderMutationFilter   (add/exclude request & response hdrs)           │
+   │  TransformGatewayFilter (pluggable body transforms)                     │
+   │  DedupeResponseHeadersFilter  (optional)                                │
+   │  CspGatewayFilter       (global or per-route CSP response header)       │
+   │  ProxyFilter            ← terminal: LoadBalancer + OkHttp               │
    └────────────────────────────────────────────────────────────────┘
                 │
                 ▼
@@ -196,6 +227,35 @@ gateway:
 
       audit-enabled: true
       audit-store: database       # "database" or "file"
+
+      jwt-policy:
+        enabled: false
+        algorithm: HS256
+        secret-or-public-key: "change-me-minimum-32-chars-secret!!"
+        issuer: ""
+        audience: ""
+        required-claims: {}
+        exclude-paths: []
+
+      csrf-policy:
+        enabled: false
+        token-ttl-seconds: 3600
+        bind-to: IP                # IP | SESSION
+        exclude-paths: []
+
+      csp-policy:
+        enabled: false
+        policy: "default-src 'self'"
+        report-only: false
+        exclude-paths: []
+
+      http-validation-policy:
+        enabled: false
+        validate-query-params: true
+        validate-headers: true
+        validate-cookies: true
+        validate-body: false
+        exclude-paths: []
 ```
 
 ---
@@ -209,6 +269,7 @@ path-pattern: /api/users
 # Matches: /api/users, /api/users/123
 # Does NOT match: /api/users-v2
 ```
+LoadBalanecer Type `ROUND_ROBIN` or `RANDOM` is recommended for PATH routes.
 
 ### REGEX
 Full Java regex match against the request path.
@@ -216,17 +277,23 @@ Full Java regex match against the request path.
 routing-type: REGEX
 path-pattern: "/api/v[0-9]+/.*"
 ```
+LoadBalancer Type `ROUND_ROBIN` or `RANDOM` is recommended for REGEX routes.
 
 ### HEADER
-Matches when a specific header (optionally with a specific value) is present.
+Routes only when a specific request header matches a configured value.
 ```yaml
 routing-type: HEADER
 header-match-name: X-Canary
 header-match-value: "true"
 ```
+LoadBalancer Type `ROUND_ROBIN` or `RANDOM` is recommended for HEADER routes.
 
 ### TRAFFIC_SPLIT
-Weight-based distribution with no path constraint.
+Weight-based or header-based distribution across multiple targets.
+
+LoadBalancer Type `WEIGHTED` or `HEADER` is recommended for TRAFFIC_SPLIT routes.
+
+Scenario 1: 90% stable, 10% canary Traffic split:
 ```yaml
 routing-type: TRAFFIC_SPLIT
 load-balancer-type: WEIGHTED
@@ -237,15 +304,32 @@ targets:
     weight: 1
 ```
 
+Scenario 2: Header-based split (e.g., A/B testing):
+
+```yaml
+routing-type: TRAFFIC_SPLIT
+load-balancer-type: HEADER
+header-match-name: X-User-Group
+header-match-value: "beta"
+targets:
+  - url: http://beta-group:8080
+    header-match-name: X-User-Group
+    header-match-value: "beta"
+  - url: http://default-group:8080
+    header-match-name: X-User-Group
+    header-match-value: "default"
+```
+
 ---
 
 ## Load Balancing
 
-| Strategy | Behaviour |
-|---|---|
-| `ROUND_ROBIN` | Cycles through targets (lock-free AtomicInteger, per-route) |
-| `WEIGHTED` | Random selection proportional to `weight` |
-| `RANDOM` | Uniform random selection |
+| Strategy      | Behaviour                                                                  |
+|---------------|----------------------------------------------------------------------------|
+| `ROUND_ROBIN` | Cycles through targets (lock-free AtomicInteger, per-route)                |
+| `WEIGHTED`    | Random selection proportional to `weight`                                  |
+| `HEADER`      | Routes to the target whose `header-match-value` matches the request header |
+| `RANDOM`      | Uniform random selection                                                   |
 
 ---
 
@@ -322,6 +406,49 @@ These headers are forwarded verbatim to the upstream regardless of `exclude-requ
 
 ---
 
+## Security Filters
+
+Security filters can be configured **globally** (applied to all routes) in the
+top-level `gateway:` block, or **per-route** to override or disable the global
+policy for specific routes. Global policies are hot-reloadable via
+`POST /gateway/admin/reload`.
+
+| Filter | Purpose | Failure Status |
+|---|---|---|
+| `JwtAuthFilter` | Validates Bearer JWT token and required claims | `401` / `403` |
+| `CsrfGatewayFilter` | Enforces CSRF token on unsafe methods (`POST`,`PUT`,`DELETE`,`PATCH`) | `403` |
+| `HttpValidationFilter` | Validates query/header/cookie/body against blacklist regex rules | `400` |
+| `CspGatewayFilter` | Injects `Content-Security-Policy` (or report-only variant) on response | N/A (header injection) |
+
+Global policy example (applies to every route):
+```yaml
+gateway:
+  jwt-policy:
+    enabled: true
+    algorithm: HS256
+    secret-or-public-key: "change-me-minimum-32-chars-secret!!"
+    exclude-paths: [/gateway/health, /gateway/admin]
+  csrf-policy:
+    enabled: true
+    bind-to: IP
+    exclude-paths: [/gateway/health, /gateway/admin]
+  csp-policy:
+    enabled: true
+    policy: "default-src 'self'"
+    exclude-paths: [/gateway/health, /gateway/admin]
+```
+
+Per-route override (disable JWT for one route):
+```yaml
+routes:
+  - id: public-service
+    jwt-policy: { enabled: false }
+```
+
+CSRF tokens are stored via distributed `CsrfTokenStore` (Hazelcast implementation in `app`).
+
+---
+
 ## WebSocket Proxying
 
 Bidirectional WebSocket proxy via OkHttp. Any path matching a route's `path-pattern` is automatically eligible for WebSocket proxying — no additional configuration required.
@@ -355,6 +482,31 @@ curl -X POST http://localhost:8080/gateway/admin/routes \
     "load-balancer-type": "ROUND_ROBIN",
     "targets": [{"url": "http://new-service:8080", "weight": 1}]
   }'
+```
+
+---
+
+## Security Validation Rules API
+
+Dynamic blacklist rule management endpoints:
+
+| Method | Path | Description |
+|---|---|---|
+| `GET`    | `/gateway/admin/security/rules` | List all rules |
+| `POST`   | `/gateway/admin/security/rules` | Create a new rule |
+| `POST`   | `/gateway/admin/security/rules/reload` | Reload in-memory rules from DB |
+| `PATCH`  | `/gateway/admin/security/rules/{id}/enable` | Enable a rule |
+| `PATCH`  | `/gateway/admin/security/rules/{id}/disable` | Disable a rule |
+| `DELETE` | `/gateway/admin/security/rules/{id}` | Delete a rule |
+
+Example create payload:
+```json
+{
+  "name": "XSS script tag",
+  "pattern": "(?i)<script",
+  "target": "ALL",
+  "enabled": true
+}
 ```
 
 ---
@@ -425,20 +577,147 @@ For YAML-sourced routes in multi-instance deployments, mount `application.yml` a
 
 ## Building & Running
 
+### Build Tool: Mill
+
+This project uses **Mill**, a modern, lightweight build tool for the JVM that offers:
+- **Declarative configuration** via `*.mill.yaml` files (1/10th the size of Maven/Gradle)
+- **Aggressive caching & parallelism** — 3-7x faster builds than Maven/Gradle
+- **Object-oriented build structure** — easy to understand and extend
+- **Multi-module support** with clear module boundaries
+
+#### Prerequisites
+
+- Java 21+
+- Mill 1.1.6+ (install via [Mill docs](https://mill-build.org/) or Homebrew: `brew install mill`)
+
+#### Quick Reference: Common Mill Commands
+
+| Command | Purpose |
+|---------|---------|
+| `mill app.run` | Run the gateway application locally |
+| `mill app.test` | Run all app module tests |
+| `mill utilities.test` | Run utilities module tests |
+| `mill shared.test` | Run shared module tests |
+| `mill test` | Run all tests across all modules |
+| `mill app.compile` | Compile app module sources |
+| `mill app.assembly` | Build executable JAR with all dependencies |
+| `mill __.compile` | Compile all modules |
+| `mill __.test` | Run all tests (same as `mill test`) |
+
+#### Running the Gateway
+
 ```bash
-# Run locally
-./gradlew :app:run
+# Start the gateway
+mill app.run
 
-# Run all tests
-./gradlew test
-
-# Module-specific tests
-./gradlew :utilities:test
-./gradlew :app:test
-
-# Build distribution ZIP
-./gradlew :app:installDist
+# With custom environment (sets JVM args and env variables)
+mill app.run
+# NB: VM arg `--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED` 
+# and env var `app_env=development` are auto-configured
 ```
+
+#### Running Tests
+
+```bash
+# Run all tests across all modules
+mill test
+
+# Run app module tests only
+mill app.test
+
+# Run utilities module tests only
+mill utilities.test
+
+# Run shared module tests only
+mill shared.test
+
+# Run tests with watch mode (re-runs on source changes)
+mill test -w
+
+# Run a specific test class
+mill app.test org.example.gateway.api.AdminControllerTest
+```
+
+#### Building Distributions
+
+```bash
+# Build a standalone executable JAR
+mill app.assembly
+
+# Output: out/app/assembly.dest/out.jar
+
+# Build dist ZIP with launcher scripts
+mill app.installDist
+
+# Output: out/app/installDist.dest/
+```
+
+#### Module Structure & Dependencies
+
+The project is organized into three modules:
+
+**`app/`** — Main Javalin application
+- Depends on: `shared`, `utilities`
+- Contains: Gateway entry point, controllers, configuration, database, proxy logic, admin APIs
+- Build config: `app/package.mill.yaml`
+
+**`utilities/`** — Reusable filter & routing primitives
+- Depends on: `shared`
+- Contains: Filter chains, load balancers, rate limiters, circuit breaker, cache, routing matchers
+- **No app-layer dependencies** — can be used independently
+- Build config: `utilities/package.mill.yaml`
+
+**`shared/`** — Common DTOs and mapper utilities
+- Depends on: nothing (leaf module)
+- Contains: RouteDefinition, TargetDefinition, and cross-module DAO/mapping helpers
+- Build config: `shared/package.mill.yaml`
+
+Module dependency graph:
+```
+app ──────────┐
+              ├──→ shared
+utilities ────┘
+```
+
+#### Running Tests Per Module
+
+Tests are nested under each module:
+
+```bash
+# App tests
+mill app.test
+
+# Utilities tests
+mill utilities.test
+
+# Shared tests
+mill shared.test
+
+# All at once (parallel by default)
+mill test
+```
+
+Each test module is configured with JUnit 5 (`TestModule.Junit5`) via the base `ProjectBaseModule` in `mill-build/src/ProjectBaseModule.scala`.
+
+#### Troubleshooting Mill
+
+If you encounter issues:
+
+```bash
+# Clear Mill's cache
+rm -rf out/
+
+# Re-run with verbose output
+mill --debug app.test
+
+# Show module dependencies
+mill --show app.moduleDeps
+
+# List all available tasks
+mill --help
+```
+
+For more details, see the [Mill documentation](https://mill-build.org/mill/).
 
 ---
 
@@ -492,3 +771,11 @@ javalin-gateway/
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
+
+```shell
+
+az role assignment create \
+--role "Storage Table Data Contributor" \
+--assignee $(az ad signed-in-user show --query id -o tsv) \
+--scope "/subscriptions/bc01e45b-fca2-4819-ac40-e8d9aeade6a9/resourceGroups/rg-datalake-demo/providers/Microsoft.Storage/storageAccounts/thejdatalake"
+```

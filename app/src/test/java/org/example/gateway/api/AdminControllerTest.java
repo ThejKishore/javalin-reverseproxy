@@ -12,10 +12,13 @@ import io.javalin.testtools.JavalinTest;
 import org.example.gateway.config.GatewayConfig;
 import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
+import org.example.gateway.routes.dao.AuditLogEntry;
+import org.example.gateway.storage.audit.AuditStorageProvider;
 import org.example.utilities.gateway.model.RouteDefinition;
 import org.example.utilities.gateway.model.TargetDefinition;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static io.javalin.apibuilder.ApiBuilder.*;
@@ -35,19 +38,49 @@ class AdminControllerTest {
 
     private Javalin buildApp(AdminController admin) {
         return Javalin.create(cfg ->
-                cfg.router.apiBuilder(() ->
+                cfg.routes.apiBuilder(() ->
                         path("/gateway/admin", () -> {
                             get("/routes", admin::listRoutes);
                             post("/routes", admin::createRoute);
-                            get("/routes/{id}", admin::getRoute);
-                            put("/routes/{id}", admin::updateRoute);
-                            delete("/routes/{id}", admin::deleteRoute);
-                            patch("/routes/{id}/enable", admin::enableRoute);
-                            patch("/routes/{id}/disable", admin::disableRoute);
+                            path("/routes/<pathPattern>", () -> {
+                                get(admin::getRoute);
+                                put(admin::updateRoute);
+                                delete(admin::deleteRoute);
+                                patch("/enable", admin::enableRoute);
+                                patch("/disable", admin::disableRoute);
+                            });
                             post("/reload", admin::reload);
                         })
                 )
         );
+    }
+
+    private AdminController admin(RouteRegistry registry, AuditStorageProvider auditProvider) {
+        return new AdminController(registry, new RouteLoader(new GatewayConfig(), registry, null), null, null, auditProvider, null, null);
+    }
+
+    private static final class CapturingAuditStorageProvider implements AuditStorageProvider {
+        private final List<AuditLogEntry> entries = new ArrayList<>();
+
+        @Override
+        public void insert(AuditLogEntry entry) {
+            entries.add(entry);
+        }
+
+        @Override
+        public List<AuditLogEntry> findRecent(int limit) {
+            return List.copyOf(entries);
+        }
+
+        @Override
+        public List<AuditLogEntry> findByRouteId(String routeId, int limit) {
+            return entries.stream().filter(entry -> routeId.equals(entry.routeId())).toList();
+        }
+
+        @Override
+        public List<AuditLogEntry> findByRequestId(String requestId) {
+            return entries.stream().filter(entry -> requestId.equals(entry.requestId())).toList();
+        }
     }
 
     @Test
@@ -104,5 +137,138 @@ class AdminControllerTest {
             assertTrue(resp.body().string().contains("reloaded"));
         });
     }
-}
 
+    @Test
+    void createRoute_acceptsRouteDto_andReturns201() {
+        RouteRegistry registry = new RouteRegistry();
+        registry.reload(List.of());
+        AdminController admin = new AdminController(registry,
+                new RouteLoader(new GatewayConfig(), registry, null), null);
+
+        // RouteDto format (kebab-case @JsonProperty keys, no security-policy fields)
+        String createJson = """
+            {
+              "id": "new-route",
+              "name": "New Route",
+              "path-pattern": "/api/new",
+              "routing-type": "PATH",
+              "enabled": true,
+              "version": 1,
+              "timeout-ms": 3000,
+              "load-balancer-type": "ROUND_ROBIN",
+              "targets": [
+                {"url": "http://localhost:9091", "weight": 1}
+              ]
+            }
+            """;
+
+        JavalinTest.test(buildApp(admin), (server, client) -> {
+            var resp = client.post("/gateway/admin/routes", createJson);
+            assertEquals(201, resp.code());
+            String body = resp.body().string();
+            assertTrue(body.contains("new-route"));
+            assertTrue(body.contains("New Route"));
+        });
+    }
+
+    @Test
+    void updateRoute_acceptsRouteDto_returns200() {
+        RouteRegistry registry = new RouteRegistry();
+        registry.reload(List.of(sampleRoute()));
+        AdminController admin = new AdminController(registry,
+                new RouteLoader(new GatewayConfig(), registry, null), null);
+
+        // RouteDto update body — no jwt/csrf/csp-policy; they are managed separately
+        String updateJson = """
+            {
+              "name": "Updated Route",
+              "path-pattern": "/api/test",
+              "routing-type": "PATH",
+              "enabled": true,
+              "version": 1,
+              "timeout-ms": 5000,
+              "load-balancer-type": "ROUND_ROBIN",
+              "targets": [
+                {"url": "http://localhost:9090", "weight": 1}
+              ]
+            }
+            """;
+
+        JavalinTest.test(buildApp(admin), (server, client) -> {
+            var put = client.put("/gateway/admin/routes/api/test", updateJson);
+            assertEquals(200, put.code());
+
+            var get = client.get("/gateway/admin/routes/api/test");
+            assertEquals(200, get.code());
+            String body = get.body().string();
+            assertTrue(body.contains("Updated Route"));
+            assertTrue(body.contains("5000"));
+        });
+    }
+
+    @Test
+    void getRoute_returnsRouteDtoFormat() {
+        RouteRegistry registry = new RouteRegistry();
+        registry.reload(List.of(sampleRoute()));
+        AdminController admin = new AdminController(registry,
+                new RouteLoader(new GatewayConfig(), registry, null), null);
+
+        JavalinTest.test(buildApp(admin), (server, client) -> {
+            var resp = client.get("/gateway/admin/routes/api/test");
+            assertEquals(200, resp.code());
+            String body = resp.body().string();
+            // RouteDto uses kebab-case via @JsonProperty
+            assertTrue(body.contains("\"path-pattern\""));
+            assertTrue(body.contains("/api/test"));
+        });
+    }
+
+    @Test
+    void routeCrud_writesAuditEntries() {
+        RouteRegistry registry = new RouteRegistry();
+        registry.reload(List.of());
+        CapturingAuditStorageProvider auditProvider = new CapturingAuditStorageProvider();
+        AdminController admin = admin(registry, auditProvider);
+
+        String createJson = """
+            {
+              "id": "audit-route",
+              "name": "Audit Route",
+              "path-pattern": "/api/audit",
+              "routing-type": "PATH",
+              "enabled": true,
+              "version": 1,
+              "timeout-ms": 3000,
+              "load-balancer-type": "ROUND_ROBIN",
+              "targets": [
+                {"url": "http://localhost:9091", "weight": 1}
+              ]
+            }
+            """;
+
+        String updateJson = """
+            {
+              "name": "Audit Route Updated",
+              "path-pattern": "/api/audit",
+              "routing-type": "PATH",
+              "enabled": true,
+              "version": 1,
+              "timeout-ms": 4000,
+              "load-balancer-type": "ROUND_ROBIN",
+              "targets": [
+                {"url": "http://localhost:9091", "weight": 1}
+              ]
+            }
+            """;
+
+        JavalinTest.test(buildApp(admin), (server, client) -> {
+            assertEquals(201, client.post("/gateway/admin/routes", createJson).code());
+            assertEquals(200, client.put("/gateway/admin/routes/api/audit", updateJson).code());
+            assertEquals(204, client.delete("/gateway/admin/routes/api/audit").code());
+        });
+
+        assertEquals(3, auditProvider.entries.size());
+        assertEquals(List.of("audit-route", "audit-route", "audit-route"),
+                auditProvider.entries.stream().map(AuditLogEntry::routeId).toList());
+    }
+}

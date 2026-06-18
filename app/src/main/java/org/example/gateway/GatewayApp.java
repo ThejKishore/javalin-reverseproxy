@@ -8,18 +8,37 @@
 package org.example.gateway;
 
 import io.javalin.Javalin;
+import io.javalin.plugin.bundled.CorsPluginConfig;
 import org.example.gateway.api.AdminController;
+import org.example.gateway.api.AuditController;
 import org.example.gateway.api.HealthController;
+import org.example.gateway.api.ConsolidatedOpenApiController;
 import org.example.gateway.config.GatewayConfig;
+import org.example.gateway.config.HazelcastConfig;
 import org.example.gateway.config.YamlConfigLoader;
+import org.example.gateway.config.OpenApiExportConfig;
 import org.example.gateway.db.DatabaseManager;
 import org.example.gateway.proxy.ProxyHandler;
 import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
+import org.example.gateway.security.HazelcastCsrfTokenStore;
+import org.example.gateway.security.ValidationRuleStore;
+import org.example.gateway.storage.audit.AuditStorageProvider;
+import org.example.gateway.storage.audit.AuditStorageProviderFactory;
+import org.example.gateway.storage.changelog.ChangeLogStorageProvider;
+import org.example.gateway.storage.changelog.ChangeLogStorageProviderFactory;
+import org.example.gateway.storage.routes.RouteStorageProvider;
+import org.example.gateway.storage.routes.RouteStorageProviderFactory;
+import org.example.gateway.storage.validationrule.ValidationRuleStorageProvider;
+import org.example.gateway.storage.validationrule.ValidationRuleStorageProviderFactory;
 import org.example.utilities.gateway.exception.CircuitBreakerOpenException;
 import org.example.utilities.gateway.exception.GatewayException;
 import org.example.utilities.gateway.exception.NoTargetAvailableException;
 import org.example.utilities.gateway.exception.RateLimitExceededException;
+import org.example.utilities.gateway.security.HttpValidationFilter;
+import com.hazelcast.config.Config;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,20 +69,100 @@ public class GatewayApp {
         DatabaseManager db = new DatabaseManager(config.getDatasource());
         Jdbi jdbi = db.getJdbi();
 
+        // ── Hazelcast (CSRF token store) ──────────────────────────────────────
+        HazelcastInstance hazelcast = null;
+        HazelcastCsrfTokenStore csrfTokenStore = null;
+        HazelcastConfig hzCfg = config.getHazelcast();
+        if (hzCfg != null && hzCfg.isEnabled()) {
+            Config hz = new Config();
+            hz.setClusterName(hzCfg.getClusterName());
+            hz.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+            if (!hzCfg.getMembers().isEmpty()) {
+                hz.getNetworkConfig().getJoin().getTcpIpConfig()
+                  .setEnabled(true)
+                  .setMembers(hzCfg.getMembers());
+            }
+            hazelcast = Hazelcast.newHazelcastInstance(hz);
+            csrfTokenStore = new HazelcastCsrfTokenStore(hazelcast);
+            log.info("Hazelcast initialised (cluster={})", hzCfg.getClusterName());
+        } else {
+            log.info("Hazelcast disabled — CSRF filters will be inactive");
+        }
+
+        // ── Validation rule store (hot-reloadable ESAPI patterns) ─────────────
+        boolean isYaml = "yaml".equalsIgnoreCase(config.getConfigSource());
+        ValidationRuleStorageProvider validationRuleStorageProvider = isYaml
+                ? null
+                : ValidationRuleStorageProviderFactory.create(config, jdbi);
+        ValidationRuleStore validationRuleStore = new ValidationRuleStore(validationRuleStorageProvider);
+        validationRuleStore.reload();
+
+        // Adapter: ValidationRuleStore → HttpValidationFilter.HttpValidationRuleProvider
+        HttpValidationFilter.HttpValidationRuleProvider ruleProvider = () ->
+                validationRuleStore.getRules().stream()
+                        .map(r -> new HttpValidationFilter.ValidationRule(
+                                r.id(), r.name(), r.target(), r.pattern()))
+                        .toList();
+
         // Registry + loader
         RouteRegistry registry = new RouteRegistry();
-        RouteLoader loader = new RouteLoader(config, registry, jdbi);
+        if (csrfTokenStore != null) {
+            registry.setCsrfTokenStore(csrfTokenStore);
+        }
+        registry.setValidationRuleProvider(ruleProvider);
+
+        // Wire global JWT policy (applies to every route unless overridden per-route)
+        if (config.getJwtPolicy() != null && config.getJwtPolicy().isEnabled()) {
+            registry.setGlobalJwtPolicy(config.getJwtPolicy());
+            log.info("Global JWT policy enabled (algorithm={}, excludePaths={})",
+                    config.getJwtPolicy().getAlgorithm(),
+                    config.getJwtPolicy().getExcludePaths());
+        }
+        // Wire global CSRF policy
+        if (config.getCsrfPolicy() != null && config.getCsrfPolicy().isEnabled()) {
+            registry.setGlobalCsrfPolicy(config.getCsrfPolicy());
+            log.info("Global CSRF policy enabled (bindTo={}, excludePaths={})",
+                    config.getCsrfPolicy().getBindTo(),
+                    config.getCsrfPolicy().getExcludePaths());
+        }
+        // Wire global CSP policy
+        if (config.getCspPolicy() != null && config.getCspPolicy().isEnabled()) {
+            registry.setGlobalCspPolicy(config.getCspPolicy());
+            log.info("Global CSP policy enabled (reportOnly={}, policy='{}')",
+                    config.getCspPolicy().isReportOnly(),
+                    config.getCspPolicy().getPolicy());
+        }
+
+        // ── Storage provider (routes) ─────────────────────────────────────────
+        RouteStorageProvider storageProvider = isYaml
+                ? null
+                : RouteStorageProviderFactory.create(config, jdbi);
+
+        // ── Storage providers (audit, changelog) ──────────────────────────────
+        AuditStorageProvider auditProvider = isYaml
+                ? null
+                : AuditStorageProviderFactory.create(config, jdbi);
+        ChangeLogStorageProvider changeLogProvider = isYaml
+                ? null
+                : ChangeLogStorageProviderFactory.create(config, jdbi);
+
+        RouteLoader loader = new RouteLoader(config, registry, storageProvider);
         loader.load();
+        AdminController admin = new AdminController(registry, loader, storageProvider,
+                validationRuleStore, auditProvider, changeLogProvider, validationRuleStorageProvider);
+        AuditController audit = new AuditController(auditProvider, changeLogProvider);
+        HealthController health = new HealthController(registry);
+        OpenApiExportConfig openApiExportConfig = config.getOpenApiExport();
+        ConsolidatedOpenApiController consolidatedOpenApi =
+                new ConsolidatedOpenApiController(registry, openApiExportConfig);
 
         // Handlers & controllers
         ProxyHandler proxyHandler = new ProxyHandler(registry, jdbi);
-        AdminController admin = new AdminController(registry, loader, jdbi);
-        HealthController health = new HealthController(registry);
 
         // ── Build Javalin app ─────────────────────────────────────────────────
         Javalin app = Javalin.create(cfg -> {
             cfg.bundledPlugins.enableDevLogging();
-            cfg.bundledPlugins.enableCors(cors -> cors.addRule(it -> it.anyHost()));
+            cfg.bundledPlugins.enableCors(cors -> cors.addRule(CorsPluginConfig.CorsRule::anyHost));
 
             // ── Health endpoints ──────────────────────────────────────────────
             cfg.routes.apiBuilder(() ->
@@ -74,14 +173,17 @@ public class GatewayApp {
                 })
             );
 
-            // ── Admin API ─────────────────────────────────────────────────────
+            // ── Admin API ─────────────────────────────────────────────────
             cfg.routes.apiBuilder(() ->
                 path("/gateway/admin", () -> {
                     post("/reload", admin::reload);
+                    get("/audit/logs", audit::getAuditLogs);
+                    get("/change-logs", audit::getChangeLogs);
+                    path("/audit/routes/{routeId}", () -> get(audit::getRouteAuditLogs));
                     path("/routes", () -> {
                         get(admin::listRoutes);
                         post(admin::createRoute);
-                        path("/{id}", () -> {
+                        path("/<pathPattern>", () -> {
                             get(admin::getRoute);
                             put(admin::updateRoute);
                             delete(admin::deleteRoute);
@@ -89,17 +191,31 @@ public class GatewayApp {
                             patch("/disable", admin::disableRoute);
                         });
                     });
+                    // ── Security: Validation rules ────────────────────────
+                    path("/security/rules", () -> {
+                        get(admin::listValidationRules);
+                        post(admin::createValidationRule);
+                        post("/reload", admin::reloadValidationRules);
+                        path("/{id}", () -> {
+                            patch("/enable",  admin::enableValidationRule);
+                            patch("/disable", admin::disableValidationRule);
+                            delete(admin::deleteValidationRule);
+                        });
+                    });
                 })
             );
 
+            // Secured consolidated OpenAPI export (for APIM registration)
+            cfg.routes.get(openApiExportConfig.getPath(), consolidatedOpenApi::getConsolidatedSpec);
+
             // ── Catch-all HTTP proxy (all verbs, slash-spanning param) ─────────
-            cfg.routes.get("/<path>",     proxyHandler::handle);
-            cfg.routes.post("/<path>",    proxyHandler::handle);
-            cfg.routes.put("/<path>",     proxyHandler::handle);
-            cfg.routes.patch("/<path>",   proxyHandler::handle);
-            cfg.routes.delete("/<path>",  proxyHandler::handle);
-            cfg.routes.get("/",           proxyHandler::handle);
-            cfg.routes.post("/",          proxyHandler::handle);
+            cfg.routes.get("/<path>", proxyHandler);
+            cfg.routes.post("/<path>", proxyHandler);
+            cfg.routes.put("/<path>", proxyHandler);
+            cfg.routes.patch("/<path>", proxyHandler);
+            cfg.routes.delete("/<path>", proxyHandler);
+            cfg.routes.get("/", proxyHandler);
+            cfg.routes.post("/", proxyHandler);
 
 
             // ── Exception handlers ────────────────────────────────────────────
@@ -135,9 +251,11 @@ public class GatewayApp {
             }
         }, interval, interval, TimeUnit.SECONDS);
 
+        final HazelcastInstance hazelcastRef = hazelcast;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             scheduler.shutdown();
             app.stop();
+            if (hazelcastRef != null) hazelcastRef.shutdown();
             log.info("Gateway stopped");
         }));
     }
@@ -146,4 +264,3 @@ public class GatewayApp {
         return Map.of("status", status, "error", message);
     }
 }
-

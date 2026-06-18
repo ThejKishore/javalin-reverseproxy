@@ -18,6 +18,20 @@ public class TargetDefinition {
     @JsonProperty("weight")
     private int weight = 1;
 
+    /**
+     * For {@code HEADER} load balancer: the request header name to inspect.
+     * Only used when {@code load-balancer-type: HEADER}.
+     */
+    @JsonProperty("header-match-name")
+    private String headerMatchName;
+
+    /**
+     * For {@code HEADER} load balancer: the expected header value that routes
+     * the request to this target.
+     */
+    @JsonProperty("header-match-value")
+    private String headerMatchValue;
+
     public TargetDefinition() {}
 
     public TargetDefinition(String url, int weight) {
@@ -31,9 +45,14 @@ public class TargetDefinition {
     public int getWeight() { return weight; }
     public void setWeight(int weight) { this.weight = weight; }
 
+    public String getHeaderMatchName() { return headerMatchName; }
+    public void setHeaderMatchName(String headerMatchName) { this.headerMatchName = headerMatchName; }
+
+    public String getHeaderMatchValue() { return headerMatchValue; }
+    public void setHeaderMatchValue(String headerMatchValue) { this.headerMatchValue = headerMatchValue; }
+
     @Override
     public String toString() {
         return "TargetDefinition{url='" + url + "', weight=" + weight + '}';
     }
 }
-

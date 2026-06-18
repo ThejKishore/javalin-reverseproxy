@@ -8,7 +8,12 @@ plugins {
     id("buildlogic.java-application-conventions")
 }
 
+val eclipseStoreJvmArgs = listOf(
+    "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED"
+)
+
 dependencies {
+    implementation(project(":shared"))
     implementation(project(":utilities"))
 
     // Jackson YAML for application.yml parsing
@@ -23,20 +28,46 @@ dependencies {
     implementation(libs.postgresql)
     runtimeOnly(libs.flyway.postgresql)
 
+    //
+    implementation("com.azure:azure-data-tables:12.5.9")
+    implementation("com.azure:azure-identity:1.18.1")
+
+
     // Flyway — schema migrations
     implementation(libs.flyway.core)
 
     // Logback — SLF4J implementation
     implementation(libs.logback.classic)
 
+    // JWT validation
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
+
+    // Hazelcast — distributed CSRF token store
+    // Exclude the old Servlet API stub that conflicts with Jetty 12
+    implementation(libs.hazelcast) {
+        exclude(group = "org.eclipse.jetty.toolchain", module = "jetty-jakarta-servlet-api")
+        exclude(group = "jakarta.servlet", module = "jakarta.servlet-api")
+    }
+
+    // OWASP ESAPI — HTTP input blacklist validation
+    implementation(libs.esapi)
+
     // Test
     testImplementation(libs.okhttp.mockwebserver)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.junit)
+    testImplementation(libs.assertj.core)
     testImplementation(libs.h2)
 }
 
 application {
     // Define the main class for the application.
     mainClass = "org.example.gateway.GatewayApp"
+    applicationDefaultJvmArgs = eclipseStoreJvmArgs
+}
+
+tasks.withType<Test>().configureEach {
+    jvmArgs(eclipseStoreJvmArgs)
 }

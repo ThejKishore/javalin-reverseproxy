@@ -1,0 +1,54 @@
+{
+  "id": "",
+  "name": "test",
+  "path-pattern": "/api/tla",
+  "routing-type": "TRAFFIC_SPLIT",
+  "load-balancer-type": "HEADER",
+  "strip-prefix": "/api/tla",
+  "timeout-ms": 5000,
+  "enabled": true,
+  "targets": [
+    {
+      "url": "http://localhost:8080",
+      "weight": 1,
+      "header-match-name": "x-color",
+      "header-match-value": "red"
+    },
+    {
+      "url": "http://localhost:8880",
+      "weight": 1,
+      "header-match-name": "x-color",
+      "header-match-value": "blue"
+    }
+  ],
+  "rate-limit-policy": {
+    "enabled": true,
+    "requests-per-second": 100,
+    "burst": 20,
+    "timeout-duration-ms": 0
+  },
+  "circuit-breaker-policy": {
+    "enabled": true,
+    "failure-rate-threshold": 50,
+    "wait-duration-seconds": 60,
+    "sliding-window-size": 10
+  },
+  "cache-policy": {
+    "enabled": true,
+    "ttl-seconds": 300,
+    "cache-key-strategy": "METHOD_PATH_QUERY"
+  },
+  "audit-enabled": true,
+  "audit-store": "file",
+  "header-rules": {
+    "add-request": {
+      "x-javalin": "fromgateway"
+    },
+    "add-response": {
+      "x-javalin-response": "fromgateway"
+    },
+    "exclude-request": [],
+    "exclude-response": []
+  },
+  "auth-forward-headers": []
+}

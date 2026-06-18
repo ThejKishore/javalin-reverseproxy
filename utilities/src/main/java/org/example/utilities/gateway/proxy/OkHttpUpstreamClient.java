@@ -75,7 +75,7 @@ public class OkHttpUpstreamClient implements UpstreamHttpClient {
         HeaderRules headerRules = route.getHeaderRules();
         if (headerRules != null) {
             if (headerRules.getAddRequest() != null) {
-                headerRules.getAddRequest().forEach(reqBuilder::header);
+                headerRules.getAddRequest().forEach(e -> reqBuilder.header(e.getName(), e.getValue()));
             }
             if (headerRules.getExcludeRequest() != null) {
                 headerRules.getExcludeRequest().forEach(reqBuilder::removeHeader);

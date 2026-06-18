@@ -11,6 +11,8 @@ package org.example.utilities.gateway.model;
 public enum LoadBalancerType {
     ROUND_ROBIN,
     WEIGHTED,
-    RANDOM
+    RANDOM,
+    /** Routes to the target whose {@code header-match-value} matches the specified request header. */
+    HEADER
 }
 

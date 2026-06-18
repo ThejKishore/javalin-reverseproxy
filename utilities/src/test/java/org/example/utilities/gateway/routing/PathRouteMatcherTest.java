@@ -59,7 +59,6 @@ class PathRouteMatcherTest {
 
     @Test
     void nullPattern_doesNotMatch() {
-        when(ctx.path()).thenReturn("/anything");
         assertFalse(matcher.matches(route(null), ctx));
     }
 }

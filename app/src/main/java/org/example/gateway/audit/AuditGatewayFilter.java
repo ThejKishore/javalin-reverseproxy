@@ -7,8 +7,8 @@
  */
 package org.example.gateway.audit;
 
-import org.example.gateway.db.AuditDao;
-import org.example.gateway.db.AuditLogRow;
+import org.example.gateway.storage.audit.AuditDao;
+import org.example.gateway.storage.audit.AuditLogRow;
 import org.example.utilities.gateway.filter.FilterChain;
 import org.example.utilities.gateway.filter.FilterContext;
 import org.example.utilities.gateway.filter.GatewayFilter;

@@ -12,17 +12,26 @@ import org.example.utilities.gateway.model.RouteDefinition;
 import org.example.utilities.gateway.model.RoutingType;
 
 /**
- * Always matches routes whose type is {@link RoutingType#TRAFFIC_SPLIT}.
- * Traffic-split routes have no path constraint; the load-balancer distributes
- * traffic across targets by weight.
+ * Matches TRAFFIC_SPLIT routes whose {@code path-pattern} is a prefix of the
+ * request path (same segment-boundary logic as {@link PathRouteMatcher}).
+ *
+ * <p>Traffic is then distributed across targets by the configured load-balancer
+ * (e.g. WEIGHTED or HEADER), not by this matcher.
  */
 public class TrafficSplitRouteMatcher implements RouteMatcher {
 
     @Override
     public boolean matches(RouteDefinition route, Context ctx) {
-        return route.getRoutingType() == RoutingType.TRAFFIC_SPLIT
-                && route.getTargets() != null
-                && !route.getTargets().isEmpty();
+        if (route.getRoutingType() != RoutingType.TRAFFIC_SPLIT) return false;
+        if (route.getTargets() == null || route.getTargets().isEmpty()) return false;
+
+        // Must also respect the path-pattern (prefix match at segment boundary)
+        String pattern = route.getPathPattern();
+        if (pattern == null || pattern.isBlank()) return true; // no path constraint
+        String path = ctx.path();
+        if (path.equals(pattern)) return true;
+        String prefix = pattern.endsWith("/") ? pattern : pattern + "/";
+        return path.startsWith(prefix);
     }
 }
 

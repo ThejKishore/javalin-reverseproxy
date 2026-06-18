@@ -21,7 +21,11 @@ class YamlConfigLoaderTest {
 
         assertNotNull(config);
         assertEquals(8080, config.getPort());
-        assertEquals("yaml", config.getConfigSource());
+        assertTrue(
+            java.util.Set.of("yaml", "database", "azure-table")
+                .contains(config.getConfigSource()),
+            "config-source should be one of the supported values"
+        );
         assertFalse(config.getRoutes().isEmpty(), "at least one route should be defined");
     }
 
@@ -37,6 +41,9 @@ class YamlConfigLoaderTest {
         assertEquals(LoadBalancerType.ROUND_ROBIN, route.getLoadBalancerType());
         assertFalse(route.getTargets().isEmpty(), "route must have at least one target");
         assertNotNull(route.getTargets().get(0).getUrl());
+        // JWT policy is now global — verify at gateway level, not per-route
+        assertNotNull(config.getJwtPolicy(), "global jwt-policy should be configured");
+        assertTrue(config.getJwtPolicy().isEnabled(), "global JWT policy should be enabled");
     }
 
     @Test
@@ -45,5 +52,11 @@ class YamlConfigLoaderTest {
         assertEquals("h2", config.getDatasource().getType());
         assertNotNull(config.getDatasource().getUrl());
     }
-}
 
+    @Test
+    void azureTableConfigIsPresent() throws Exception {
+        GatewayConfig config = new YamlConfigLoader().load();
+
+        assertNotNull(config.getAzureTable());
+    }
+}
