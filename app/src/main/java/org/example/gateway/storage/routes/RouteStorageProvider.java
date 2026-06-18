@@ -17,9 +17,8 @@ import java.util.Optional;
  *
  * <p>Implementations are selected at startup based on {@code config-source}:
  * <ul>
- *   <li>{@code database}           → {@link DatabaseRouteStorageProvider} (JDBI)</li>
- *   <li>{@code eclipse-store-lcl}  → {@link EclipseStoreLocalRouteStorageProvider}</li>
- *   <li>{@code eclipse-store-azure}→ {@link EclipseStoreAzureRouteStorageProvider}</li>
+ *   <li>{@code database}    → {@link DatabaseRouteStorageProvider} (JDBI)</li>
+ *   <li>{@code azure-table} → Azure Table Storage implementation</li>
  * </ul>
  *
  * <p>All methods operate on {@link RouteDao} POJOs (shared module), keeping
@@ -34,7 +33,7 @@ public interface RouteStorageProvider extends AutoCloseable {
     /** Returns only routes with {@code enabled = true}. */
     List<RouteDao> findAllEnabled();
 
-    /** Finds a single route by its unique ID. */
+    /** Finds a single route by its unique path-pattern key. */
     Optional<RouteDao> findById(String id);
 
     /** Inserts a new route. */
@@ -52,7 +51,7 @@ public interface RouteStorageProvider extends AutoCloseable {
      *
      * @return number of affected records (1 on success, 0 if not found)
      */
-    int setEnabled(String id, boolean enabled);
+    int setEnabled(String id, long version, boolean enabled);
 
     /**
      * Removes a route permanently.

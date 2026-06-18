@@ -20,6 +20,7 @@ public record RouteDao(
 	String auditStore,
 	String id,
 	boolean auditEnabled,
+	long version,
 	Map<String,String> metaData
 
 ) {

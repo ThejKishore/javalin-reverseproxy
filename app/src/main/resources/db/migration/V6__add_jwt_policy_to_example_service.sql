@@ -79,5 +79,4 @@ SET config_json = '{
     }
 }',
     updated_at = CURRENT_TIMESTAMP
-WHERE id = 'example-service';
-
+WHERE id = '/api/example';

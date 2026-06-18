@@ -16,9 +16,8 @@ import java.util.List;
  *
  * <p>Implementations are selected at startup based on {@code config-source}:
  * <ul>
- *   <li>{@code database}            → {@link DatabaseValidationRuleStorageProvider} (JDBI)</li>
- *   <li>{@code eclipse-store-lcl}   → {@link EclipseStoreLocalValidationRuleStorageProvider}</li>
- *   <li>{@code eclipse-store-azure} → {@link EclipseStoreAzureValidationRuleStorageProvider}</li>
+ *   <li>{@code database}    → {@link DatabaseValidationRuleStorageProvider} (JDBI)</li>
+ *   <li>{@code azure-table} → Azure Table Storage implementation</li>
  * </ul>
  */
 public interface ValidationRuleStorageProvider extends AutoCloseable {

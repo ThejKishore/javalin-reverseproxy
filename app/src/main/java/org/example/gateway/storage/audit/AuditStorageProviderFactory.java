@@ -7,8 +7,9 @@
  */
 package org.example.gateway.storage.audit;
 
-import org.example.gateway.config.EclipseStoreConfig;
+import org.example.gateway.config.AzureTableConfig;
 import org.example.gateway.config.GatewayConfig;
+import org.example.gateway.storage.azuretable.AzureTableClientFactory;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,8 +21,7 @@ import org.slf4j.LoggerFactory;
  * <table border="1">
  *   <tr><th>config-source</th><th>Provider</th></tr>
  *   <tr><td>database</td><td>{@link DatabaseAuditStorageProvider}</td></tr>
- *   <tr><td>eclipse-store-lcl</td><td>{@link EclipseStoreLocalAuditStorageProvider}</td></tr>
- *   <tr><td>eclipse-store-azure</td><td>{@link EclipseStoreAzureAuditStorageProvider}</td></tr>
+ *   <tr><td>azure-table</td><td>{@link AzureTableAuditStorageProvider}</td></tr>
  * </table>
  */
 public class AuditStorageProviderFactory {
@@ -46,17 +46,12 @@ public class AuditStorageProviderFactory {
                 if (jdbi == null) throw new IllegalStateException("JDBI required for database storage");
                 yield new DatabaseAuditStorageProvider(jdbi);
             }
-            case "eclipse-store-lcl" -> {
-                EclipseStoreConfig esConfig = config.getEclipseStore();
-                yield new EclipseStoreLocalAuditStorageProvider(esConfig);
-            }
-            case "eclipse-store-azure" -> {
-                EclipseStoreConfig esConfig = config.getEclipseStore();
-                if (esConfig == null || esConfig.getAzureConnectionString() == null) {
-                    throw new IllegalStateException(
-                            "eclipse-store.azure-connection-string is required for eclipse-store-azure");
+            case "azure-table" -> {
+                AzureTableConfig atConfig = config.getAzureTable();
+                if (atConfig == null) {
+                    throw new IllegalStateException("azure-table config block is required for azure-table storage");
                 }
-                yield new EclipseStoreAzureAuditStorageProvider(esConfig);
+                yield new AzureTableAuditStorageProvider(new AzureTableClientFactory(atConfig));
             }
             default -> throw new IllegalArgumentException(
                     "Unknown config-source '" + source + "'");

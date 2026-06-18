@@ -1,10 +1,11 @@
 -- V3: Insert example routes into the gateway
 
-INSERT INTO routes (id, name, enabled, config_json) VALUES
+INSERT INTO routes (id, name, enabled, version, config_json) VALUES
 (
-    'example-service',
+    '/api/example',
     'Example Service',
     true,
+    1,
     '{
         "id": "example-service",
         "name": "Example Service",
@@ -64,9 +65,10 @@ INSERT INTO routes (id, name, enabled, config_json) VALUES
     }'
 ),
 (
-    'backend-lb',
+    '/api/backend',
     'Load-Balanced Backend',
     false,
+    1,
     '{
         "id": "backend-lb",
         "name": "Load-Balanced Backend",
@@ -102,9 +104,10 @@ INSERT INTO routes (id, name, enabled, config_json) VALUES
     }'
 ),
 (
-    'canary-service',
+    '/api/canary',
     'Canary Service',
     false,
+    1,
     '{
         "id": "canary-service",
         "name": "Canary Service",
@@ -124,9 +127,10 @@ INSERT INTO routes (id, name, enabled, config_json) VALUES
     }'
 ),
 (
-    'traffic-split',
+    '/api/split',
     'Traffic Split (90/10)',
     false,
+    1,
     '{
         "id": "traffic-split",
         "name": "Traffic Split (90/10)",
@@ -148,9 +152,10 @@ INSERT INTO routes (id, name, enabled, config_json) VALUES
     }'
 ),
 (
-    'regex-route',
+    '/api/v[0-9]+/.*',
     'Regex Route',
     false,
+    1,
     '{
         "id": "regex-route",
         "name": "Regex Route",
@@ -172,4 +177,3 @@ INSERT INTO routes (id, name, enabled, config_json) VALUES
         }
     }'
 );
-

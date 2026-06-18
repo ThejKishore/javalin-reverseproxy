@@ -18,38 +18,41 @@ import java.util.Optional;
 /**
  * JDBI SqlObject DAO for the {@code routes} table.
  * Routes are stored with their full configuration serialised as JSON in
- * the {@code config_json} column.
+ * the {@code config_json} column and keyed by {@code path-pattern}.
  */
 @RegisterBeanMapper(RouteRow.class)
 public interface RouteJdbi {
 
-    @SqlQuery("SELECT id, name, config_json, enabled, created_at, updated_at FROM routes WHERE enabled = TRUE ORDER BY created_at")
+    @SqlQuery("SELECT id, name, config_json, enabled, version, created_at, updated_at FROM routes WHERE enabled = TRUE ORDER BY created_at")
     List<RouteRow> findAllEnabled();
 
-    @SqlQuery("SELECT id, name, config_json, enabled, created_at, updated_at FROM routes ORDER BY created_at")
+    @SqlQuery("SELECT id, name, config_json, enabled, version, created_at, updated_at FROM routes ORDER BY created_at")
     List<RouteRow> findAll();
 
-    @SqlQuery("SELECT id, name, config_json, enabled, created_at, updated_at FROM routes WHERE id = :id")
+    @SqlQuery("SELECT id, name, config_json, enabled, version, created_at, updated_at FROM routes WHERE id = :id")
     Optional<RouteRow> findById(@Bind("id") String id);
 
-    @SqlUpdate("INSERT INTO routes (id, name, config_json, enabled, created_at, updated_at) " +
-               "VALUES (:id, :name, :configJson, :enabled, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")
+    @SqlUpdate("INSERT INTO routes (id, name, config_json, enabled, version, created_at, updated_at) " +
+               "VALUES (:id, :name, :configJson, :enabled, :version, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")
     void insert(@Bind("id") String id,
                 @Bind("name") String name,
                 @Bind("configJson") String configJson,
-                @Bind("enabled") boolean enabled);
+                @Bind("enabled") boolean enabled,
+                @Bind("version") long version);
 
     @SqlUpdate("UPDATE routes SET name = :name, config_json = :configJson, " +
-               "enabled = :enabled, updated_at = CURRENT_TIMESTAMP WHERE id = :id")
+               "enabled = :enabled, version = :version + 1, updated_at = CURRENT_TIMESTAMP " +
+               "WHERE id = :id AND version = :version")
     int update(@Bind("id") String id,
                @Bind("name") String name,
                @Bind("configJson") String configJson,
-               @Bind("enabled") boolean enabled);
+               @Bind("enabled") boolean enabled,
+               @Bind("version") long version);
 
-    @SqlUpdate("UPDATE routes SET enabled = :enabled, updated_at = CURRENT_TIMESTAMP WHERE id = :id")
-    int setEnabled(@Bind("id") String id, @Bind("enabled") boolean enabled);
+    @SqlUpdate("UPDATE routes SET enabled = :enabled, version = :version + 1, updated_at = CURRENT_TIMESTAMP " +
+               "WHERE id = :id AND version = :version")
+    int setEnabled(@Bind("id") String id, @Bind("version") long version, @Bind("enabled") boolean enabled);
 
     @SqlUpdate("DELETE FROM routes WHERE id = :id")
     int deleteById(@Bind("id") String id);
 }
-

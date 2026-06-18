@@ -32,8 +32,7 @@ import java.util.List;
  * <ul>
  *   <li>{@code yaml}                — reads routes from {@code application.yml}</li>
  *   <li>{@code database}            — reads from JDBI via {@link RouteStorageProvider}</li>
- *   <li>{@code eclipse-store-lcl}   — reads from EclipseStore local filesystem</li>
- *   <li>{@code eclipse-store-azure} — reads from EclipseStore on Azure Blob Storage</li>
+ *   <li>{@code azure-table}         — reads from Azure Table Storage via {@link RouteStorageProvider}</li>
  * </ul>
  */
 public class RouteLoader {

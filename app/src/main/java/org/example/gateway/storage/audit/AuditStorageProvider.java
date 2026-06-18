@@ -16,9 +16,8 @@ import java.util.List;
  *
  * <p>Implementations are selected at startup based on {@code config-source}:
  * <ul>
- *   <li>{@code database}            → {@link DatabaseAuditStorageProvider} (JDBI)</li>
- *   <li>{@code eclipse-store-lcl}   → {@link EclipseStoreLocalAuditStorageProvider}</li>
- *   <li>{@code eclipse-store-azure} → {@link EclipseStoreAzureAuditStorageProvider}</li>
+ *   <li>{@code database}    → {@link DatabaseAuditStorageProvider} (JDBI)</li>
+ *   <li>{@code azure-table} → Azure Table Storage implementation</li>
  * </ul>
  *
  * <p>Audit logs are append-only — there are no update or delete operations.

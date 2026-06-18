@@ -14,14 +14,17 @@ import io.javalin.http.NotFoundResponse;
 import org.example.gateway.config.YamlConfigLoader;
 import org.example.gateway.registry.RouteLoader;
 import org.example.gateway.registry.RouteRegistry;
+import org.example.gateway.routes.dao.AuditLogEntry;
 import org.example.gateway.routes.dao.ChangeLogEntry;
-import org.example.gateway.routes.dao.ValidationRuleEntry;
+import org.example.gateway.routes.dao.RouteDao;
 import org.example.gateway.routes.mapper.RouteMapper;
 import org.example.gateway.routes.model.RouteDto;
 import org.example.gateway.security.ValidationRuleStore;
+import org.example.gateway.storage.audit.AuditStorageProvider;
 import org.example.gateway.storage.changelog.ChangeLogStorageProvider;
 import org.example.gateway.storage.routes.RouteStorageProvider;
 import org.example.gateway.storage.validationrule.ValidationRuleStorageProvider;
+import org.example.utilities.gateway.exception.GatewayException;
 import org.example.utilities.gateway.model.RouteDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,12 +46,12 @@ import java.util.UUID;
  * <table border="1">
  *   <tr><th>Method</th><th>Path</th><th>Description</th></tr>
  *   <tr><td>GET</td><td>/gateway/admin/routes</td><td>List all routes</td></tr>
- *   <tr><td>GET</td><td>/gateway/admin/routes/{id}</td><td>Get a route</td></tr>
+ *   <tr><td>GET</td><td>/gateway/admin/routes/{pathPattern}</td><td>Get a route</td></tr>
  *   <tr><td>POST</td><td>/gateway/admin/routes</td><td>Create a route</td></tr>
- *   <tr><td>PUT</td><td>/gateway/admin/routes/{id}</td><td>Replace a route</td></tr>
- *   <tr><td>DELETE</td><td>/gateway/admin/routes/{id}</td><td>Delete a route</td></tr>
- *   <tr><td>PATCH</td><td>/gateway/admin/routes/{id}/enable</td><td>Enable a route</td></tr>
- *   <tr><td>PATCH</td><td>/gateway/admin/routes/{id}/disable</td><td>Disable a route</td></tr>
+ *   <tr><td>PUT</td><td>/gateway/admin/routes/{pathPattern}</td><td>Replace a route</td></tr>
+ *   <tr><td>DELETE</td><td>/gateway/admin/routes/{pathPattern}</td><td>Delete a route</td></tr>
+ *   <tr><td>PATCH</td><td>/gateway/admin/routes/{pathPattern}/enable</td><td>Enable a route</td></tr>
+ *   <tr><td>PATCH</td><td>/gateway/admin/routes/{pathPattern}/disable</td><td>Disable a route</td></tr>
  *   <tr><td>POST</td><td>/gateway/admin/reload</td><td>Re-load all routes</td></tr>
  * </table>
  */
@@ -62,37 +65,40 @@ public class AdminController {
     private final ObjectMapper jsonMapper = YamlConfigLoader.jsonMapper();
     private final ValidationRuleStore validationRuleStore;
     private final RouteStorageProvider storageProvider;
+    private final AuditStorageProvider auditProvider;
     private final ChangeLogStorageProvider changeLogProvider;
     private final ValidationRuleStorageProvider validationRuleStorageProvider;
 
     /** Legacy constructor — no storage provider (tests / yaml-only mode). */
     public AdminController(RouteRegistry registry, RouteLoader loader) {
-        this(registry, loader, null, null, null, null);
+        this(registry, loader, null, null, null, null, null);
     }
 
     /** Constructor with validation-rule store but no storage provider. */
     public AdminController(RouteRegistry registry, RouteLoader loader,
                            ValidationRuleStore validationRuleStore) {
-        this(registry, loader, null, validationRuleStore, null, null);
+        this(registry, loader, null, validationRuleStore, null, null, null);
     }
 
     /** Constructor with route storage provider and validation-rule store. */
     public AdminController(RouteRegistry registry, RouteLoader loader,
                            RouteStorageProvider storageProvider,
                            ValidationRuleStore validationRuleStore) {
-        this(registry, loader, storageProvider, validationRuleStore, null, null);
+        this(registry, loader, storageProvider, validationRuleStore, null, null, null);
     }
 
     /** Full constructor with all storage providers. */
     public AdminController(RouteRegistry registry, RouteLoader loader,
                            RouteStorageProvider storageProvider,
                            ValidationRuleStore validationRuleStore,
+                           AuditStorageProvider auditProvider,
                            ChangeLogStorageProvider changeLogProvider,
                            ValidationRuleStorageProvider validationRuleStorageProvider) {
         this.registry = registry;
         this.loader = loader;
         this.storageProvider = storageProvider;
         this.validationRuleStore = validationRuleStore;
+        this.auditProvider = auditProvider;
         this.changeLogProvider = changeLogProvider;
         this.validationRuleStorageProvider = validationRuleStorageProvider;
     }
@@ -101,28 +107,34 @@ public class AdminController {
 
     /// Lists all routes, returned as {@link RouteDto} objects.
     public void listRoutes(Context ctx) {
-        List<RouteDto> dtos = registry.getAllRoutes().stream()
-                .map(this::toRouteDto)
-                .toList();
+        List<RouteDto> dtos = storageProvider != null
+                ? storageProvider.findAll().stream().map(this::toRouteDto).toList()
+                : registry.getAllRoutes().stream().map(route -> withVersion(toRouteDto(route), 0L)).toList();
         ctx.json(dtos);
     }
 
-    /// Returns a single route by ID as a {@link RouteDto}.
+    /// Returns a single route by path-pattern as a {@link RouteDto}.
     public void getRoute(Context ctx) {
-        String id = ctx.pathParam("id");
-        RouteDto dto = registry.getAllRoutes().stream()
-                .filter(r -> r.getId().equals(id))
-                .map(this::toRouteDto)
-                .findFirst()
-                .orElseThrow(() -> new NotFoundResponse("Route not found: " + id));
+        String pathPattern = routeKey(ctx);
+        RouteDto dto = findRouteDto(pathPattern)
+                .orElseThrow(() -> new NotFoundResponse("Route not found: " + pathPattern));
         ctx.json(dto);
     }
 
     /// Creates a new route from a {@link RouteDto} body.
     public void createRoute(Context ctx) throws Exception {
         RouteDto dto = parseBody(ctx);
+        String pathPattern = normalizePathPattern(dto.pathPattern());
+        if (pathPattern == null) {
+            throw new BadRequestResponse("'path-pattern' is required");
+        }
         if (dto.id() == null || dto.id().isBlank()) {
             dto = withId(dto, UUID.randomUUID().toString());
+        }
+        dto = withPathPattern(dto, pathPattern);
+        dto = withVersion(dto, 1L);
+        if (findRouteDto(pathPattern).isPresent()) {
+            throw new GatewayException("Duplicate route path-pattern: " + pathPattern, 409);
         }
         // Persist via storage provider
         if (storageProvider != null) {
@@ -131,44 +143,54 @@ public class AdminController {
         // Update live registry
         RouteDefinition def = toRouteDefinition(dto);
         registry.addOrUpdate(def);
+        writeAuditLog("CREATE_ROUTE", dto.id(), dto.name(), ctx, 201);
         writeChangeLog("CREATE_ROUTE", def.getId(), def.getName(),
                 "Created route: " + def.getName() + " [" + def.getPathPattern() + "]", ctx.ip());
-        ctx.status(201).json(toRouteDto(def));
+        ctx.status(201).json(resolveRouteDto(pathPattern, def, dto.version()));
     }
 
     /// Replaces an existing route's configuration from a {@link RouteDto} body.
     public void updateRoute(Context ctx) throws Exception {
-        String id = ctx.pathParam("id");
-        boolean existsInRegistry = registry.getAllRoutes().stream().anyMatch(r -> r.getId().equals(id));
-        if (!existsInRegistry && storageProvider == null) {
-            throw new NotFoundResponse("Route not found: " + id);
+        String pathPattern = routeKey(ctx);
+        RouteDto current = findRouteDto(pathPattern)
+                .orElseThrow(() -> new NotFoundResponse("Route not found: " + pathPattern));
+        RouteDto dto = withPathPattern(parseBody(ctx), pathPattern);
+        dto = withId(dto, current.id());
+        if (dto.version() <= 0) {
+            throw new BadRequestResponse("'version' is required for updates");
         }
-        RouteDto dto = withId(parseBody(ctx), id);
         // Persist via storage provider
         if (storageProvider != null) {
             int updated = storageProvider.update(RouteMapper.routeDtoToRouteDao(dto));
-            if (updated == 0 && !existsInRegistry) throw new NotFoundResponse("Route not found: " + id);
+            if (updated == 0) {
+                throw new GatewayException("Route version conflict for path-pattern: " + pathPattern, 409);
+            }
+            current = storageProvider.findById(pathPattern)
+                    .map(this::toRouteDto)
+                    .orElseThrow(() -> new NotFoundResponse("Route not found: " + pathPattern));
+            dto = current;
         }
         // Update live registry
         RouteDefinition def = toRouteDefinition(dto);
         registry.addOrUpdate(def);
+        writeAuditLog("UPDATE_ROUTE", current.id(), dto.name(), ctx, 200);
         writeChangeLog("UPDATE_ROUTE", def.getId(), def.getName(),
                 "Updated route: " + def.getName() + " [" + def.getPathPattern() + "]", ctx.ip());
-        ctx.json(toRouteDto(def));
+        ctx.json(dto);
     }
 
     /// Deletes a route by ID.
     public void deleteRoute(Context ctx) {
-        String id = ctx.pathParam("id");
-        String routeName = registry.getAllRoutes().stream()
-                .filter(r -> r.getId().equals(id))
-                .map(RouteDefinition::getName)
-                .findFirst().orElse(id);
+        String pathPattern = routeKey(ctx);
+        RouteDto current = findRouteDto(pathPattern)
+                .orElseThrow(() -> new NotFoundResponse("Route not found: " + pathPattern));
+        String routeName = current.name() != null ? current.name() : pathPattern;
         if (storageProvider != null) {
-            storageProvider.deleteById(id);
+            storageProvider.deleteById(pathPattern);
         }
-        registry.remove(id);
-        writeChangeLog("DELETE_ROUTE", id, routeName, "Deleted route: " + routeName, ctx.ip());
+        registry.remove(current.id());
+        writeAuditLog("DELETE_ROUTE", current.id(), routeName, ctx, 204);
+        writeChangeLog("DELETE_ROUTE", current.id(), routeName, "Deleted route: " + routeName, ctx.ip());
         ctx.status(204);
     }
 
@@ -263,18 +285,26 @@ public class AdminController {
     }
 
     private void toggleRoute(Context ctx, boolean enabled) {
-        String id = ctx.pathParam("id");
-        String routeName = registry.getAllRoutes().stream()
-                .filter(r -> r.getId().equals(id))
-                .map(RouteDefinition::getName)
-                .findFirst().orElse(id);
+        String pathPattern = routeKey(ctx);
+        RouteDto current = findRouteDto(pathPattern)
+                .orElseThrow(() -> new NotFoundResponse("Route not found: " + pathPattern));
+        String routeName = current.name() != null ? current.name() : pathPattern;
         if (storageProvider != null) {
-            storageProvider.setEnabled(id, enabled);
+            int updated = storageProvider.setEnabled(pathPattern, current.version(), enabled);
+            if (updated == 0) {
+                throw new GatewayException("Route version conflict for path-pattern: " + pathPattern, 409);
+            }
+            current = storageProvider.findById(pathPattern)
+                    .map(this::toRouteDto)
+                    .orElseThrow(() -> new NotFoundResponse("Route not found: " + pathPattern));
+        } else {
+            current = withEnabled(current, enabled);
         }
-        registry.setEnabled(id, enabled);
-        writeChangeLog(enabled ? "ENABLE_ROUTE" : "DISABLE_ROUTE", id, routeName,
+        registry.setEnabled(current.id(), enabled);
+        writeAuditLog(enabled ? "ENABLE_ROUTE" : "DISABLE_ROUTE", current.id(), routeName, ctx, 200);
+        writeChangeLog(enabled ? "ENABLE_ROUTE" : "DISABLE_ROUTE", current.id(), routeName,
                 (enabled ? "Enabled" : "Disabled") + " route: " + routeName, ctx.ip());
-        ctx.json(Map.of("id", id, "enabled", enabled));
+        ctx.json(withEnabled(current, enabled));
     }
 
     private void writeChangeLog(String action, String routeId, String routeName, String details, String performedBy) {
@@ -287,6 +317,29 @@ public class AdminController {
             log.info("CHANGE_LOG action={} route={} by={} details={}", action, routeName, performedBy, details);
         } catch (Exception e) {
             log.warn("Failed to write change log: {}", e.getMessage());
+        }
+    }
+
+    private void writeAuditLog(String action, String routeId, String routeName, Context ctx, int statusCode) {
+        if (auditProvider == null) return;
+        try {
+            AuditLogEntry entry = new AuditLogEntry(
+                    UUID.randomUUID().toString(),
+                    routeId,
+                    routeName,
+                    requestId(ctx),
+                    traceId(ctx),
+                    action,
+                    ctx.path(),
+                    null,
+                    statusCode,
+                    null,
+                    ctx.ip(),
+                    Instant.now());
+            auditProvider.insert(entry);
+            log.info("AUDIT action={} route={} status={}", action, routeName, statusCode);
+        } catch (Exception e) {
+            log.warn("Failed to write audit log: {}", e.getMessage());
         }
     }
 
@@ -331,13 +384,87 @@ public class AdminController {
         }
     }
 
-    /** Returns a copy of {@code dto} with the given {@code id}. */
+    private RouteDto toRouteDto(RouteDao dao) {
+        return RouteMapper.routeDaoToRouteDto(dao);
+    }
+
+    private RouteDto resolveRouteDto(String pathPattern, RouteDefinition fallback, long version) {
+        if (storageProvider == null) {
+            return withVersion(withPathPattern(toRouteDto(fallback), pathPattern), version);
+        }
+        return storageProvider.findById(pathPattern)
+                .map(this::toRouteDto)
+                .orElse(withVersion(withPathPattern(toRouteDto(fallback), pathPattern), version));
+    }
+
+    private java.util.Optional<RouteDto> findRouteDto(String id) {
+        if (storageProvider != null) {
+            return storageProvider.findById(id).map(this::toRouteDto);
+        }
+        // use partition key and
+        return registry.getAllRoutes().stream()
+                .filter(r -> {
+                    String candidate = normalizePathPattern(r.getPathPattern());
+                    return candidate != null && candidate.equals(id);
+                })
+                .findFirst()
+                .map(r -> withVersion(withPathPattern(toRouteDto(r), id), 0L));
+    }
+
+    private static RouteDto withPathPattern(RouteDto dto, String pathPattern) {
+        return new RouteDto(
+                dto.stripPrefix(), pathPattern, dto.timeoutMs(), dto.targets(),
+                dto.enabled(), dto.headerRules(), dto.circuitBreakerPolicy(),
+                dto.loadBalancerType(), dto.authForwardHeaders(), dto.rateLimitPolicy(),
+                dto.routingType(), dto.cachePolicy(), dto.name(), dto.auditStore(),
+                dto.id(), dto.auditEnabled(), dto.version(), dto.metaData());
+    }
+
     private static RouteDto withId(RouteDto dto, String id) {
         return new RouteDto(
                 dto.stripPrefix(), dto.pathPattern(), dto.timeoutMs(), dto.targets(),
                 dto.enabled(), dto.headerRules(), dto.circuitBreakerPolicy(),
                 dto.loadBalancerType(), dto.authForwardHeaders(), dto.rateLimitPolicy(),
                 dto.routingType(), dto.cachePolicy(), dto.name(), dto.auditStore(),
-                id, dto.auditEnabled(), dto.metaData());
+                id, dto.auditEnabled(), dto.version(), dto.metaData());
+    }
+
+    private static RouteDto withEnabled(RouteDto dto, boolean enabled) {
+        return new RouteDto(
+                dto.stripPrefix(), dto.pathPattern(), dto.timeoutMs(), dto.targets(),
+                enabled, dto.headerRules(), dto.circuitBreakerPolicy(),
+                dto.loadBalancerType(), dto.authForwardHeaders(), dto.rateLimitPolicy(),
+                dto.routingType(), dto.cachePolicy(), dto.name(), dto.auditStore(),
+                dto.id(), dto.auditEnabled(), dto.version(), dto.metaData());
+    }
+
+    private static RouteDto withVersion(RouteDto dto, long version) {
+        return new RouteDto(
+                dto.stripPrefix(), dto.pathPattern(), dto.timeoutMs(), dto.targets(),
+                dto.enabled(), dto.headerRules(), dto.circuitBreakerPolicy(),
+                dto.loadBalancerType(), dto.authForwardHeaders(), dto.rateLimitPolicy(),
+                dto.routingType(), dto.cachePolicy(), dto.name(), dto.auditStore(),
+                dto.id(), dto.auditEnabled(), version, dto.metaData());
+    }
+
+    private String routeKey(Context ctx) {
+        return ctx.pathParam("pathPattern");
+    }
+
+    private static String requestId(Context ctx) {
+        String requestId = ctx.header("X-Request-Id");
+        return (requestId == null || requestId.isBlank()) ? UUID.randomUUID().toString() : requestId;
+    }
+
+    private static String traceId(Context ctx) {
+        String traceId = ctx.header("X-Trace-Id");
+        return (traceId == null || traceId.isBlank()) ? null : traceId;
+    }
+
+    private static String normalizePathPattern(String pathPattern) {
+        if (pathPattern == null || pathPattern.isBlank()) {
+            return null;
+        }
+        return pathPattern.startsWith("/") ? pathPattern : "/" + pathPattern;
     }
 }

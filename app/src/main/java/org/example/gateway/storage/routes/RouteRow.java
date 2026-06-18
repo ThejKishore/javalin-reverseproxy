@@ -15,6 +15,7 @@ public class RouteRow {
     /** Full {@link org.example.utilities.gateway.model.RouteDefinition} serialised as JSON. */
     private String configJson;
     private boolean enabled;
+    private long version;
     private java.time.Instant createdAt;
     private java.time.Instant updatedAt;
 
@@ -30,10 +31,12 @@ public class RouteRow {
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
 
+    public long getVersion() { return version; }
+    public void setVersion(long version) { this.version = version; }
+
     public java.time.Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(java.time.Instant createdAt) { this.createdAt = createdAt; }
 
     public java.time.Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(java.time.Instant updatedAt) { this.updatedAt = updatedAt; }
 }
-

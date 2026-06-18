@@ -55,6 +55,9 @@ public record RouteDto(
 	@JsonProperty("audit-enabled")
 	boolean auditEnabled,
 
+	@JsonProperty("version")
+	long version,
+
 	/**
 	 * This map is used to capture details like
 	 *  context-path: /domain/servicename

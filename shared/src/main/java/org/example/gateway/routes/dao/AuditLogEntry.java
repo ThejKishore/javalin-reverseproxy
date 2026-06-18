@@ -12,9 +12,8 @@ import java.time.Instant;
 /**
  * Persistence POJO for an audit-log entry.
  *
- * <p>Used by all {@code AuditStorageProvider} implementations (JDBI, EclipseStore local,
- * EclipseStore Azure).  Mirrors {@code AuditLogRow} but as an immutable record so that
- * EclipseStore can serialise / deserialise it natively without JDBI annotations.
+ * <p>Used by all {@code AuditStorageProvider} implementations (JDBI and Azure Table Storage).
+ * Mirrors {@code AuditLogRow} as an immutable record.
  */
 public record AuditLogEntry(
         String id,

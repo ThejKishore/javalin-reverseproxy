@@ -12,9 +12,8 @@ import java.time.Instant;
 /**
  * Persistence POJO for a change-log entry.
  *
- * <p>Used by all {@code ChangeLogStorageProvider} implementations (JDBI, EclipseStore local,
- * EclipseStore Azure).  Mirrors {@code ChangeLogRow} but as an immutable record so that
- * EclipseStore can serialise / deserialise it natively without JDBI annotations.
+ * <p>Used by all {@code ChangeLogStorageProvider} implementations (JDBI and Azure Table Storage).
+ * Mirrors {@code ChangeLogRow} as an immutable record.
  */
 public record ChangeLogEntry(
         String id,

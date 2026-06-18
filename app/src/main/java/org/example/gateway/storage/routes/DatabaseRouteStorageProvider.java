@@ -12,6 +12,7 @@ import org.example.gateway.config.YamlConfigLoader;
 import org.example.gateway.routes.dao.RouteDao;
 import org.example.gateway.routes.mapper.RouteMapper;
 import org.example.gateway.routes.model.RouteDto;
+import org.example.utilities.gateway.exception.GatewayException;
 import org.jdbi.v3.core.Jdbi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,10 +24,11 @@ import java.util.Optional;
 /**
  * {@link RouteStorageProvider} backed by JDBI (H2 / PostgreSQL).
  *
- * <p>Routes are stored as JSON in the {@code config_json} column using the
- * kebab-case {@link RouteDto} format (consistent with the legacy
- * {@code RouteDefinition} serialisation).  On read, the JSON is round-tripped
- * through {@link RouteDto} → {@link RouteDao}.
+     * <p>Routes are stored as JSON in the {@code config_json} column using the
+     * kebab-case {@link RouteDto} format (consistent with the legacy
+     * {@code RouteDefinition} serialisation). The {@code id} column stores the
+     * route's {@code path-pattern} and is the primary key. On read, the JSON is
+     * round-tripped through {@link RouteDto} → {@link RouteDao}.
  */
 public class DatabaseRouteStorageProvider implements RouteStorageProvider {
 
@@ -66,22 +68,26 @@ public class DatabaseRouteStorageProvider implements RouteStorageProvider {
 
     @Override
     public void insert(RouteDao route) {
+        if (jdbi.withExtension(RouteJdbi.class, dao -> dao.findById(route.pathPattern()).isPresent())) {
+            throw new GatewayException("Duplicate route path-pattern: " + route.pathPattern(), 409);
+        }
         String json = toJson(route);
+        long version = route.version() > 0 ? route.version() : 1L;
         jdbi.useExtension(RouteJdbi.class, dao ->
-                dao.insert(route.id(), route.name(), json, route.enabled()));
+                dao.insert(route.pathPattern(), route.name(), json, route.enabled(), version));
     }
 
     @Override
     public int update(RouteDao route) {
         String json = toJson(route);
         return jdbi.withExtension(RouteJdbi.class, dao ->
-                dao.update(route.id(), route.name(), json, route.enabled()));
+                dao.update(route.pathPattern(), route.name(), json, route.enabled(), route.version()));
     }
 
     @Override
-    public int setEnabled(String id, boolean enabled) {
+    public int setEnabled(String id, long version, boolean enabled) {
         return jdbi.withExtension(RouteJdbi.class, dao ->
-                dao.setEnabled(id, enabled));
+                dao.setEnabled(id, version, enabled));
     }
 
     @Override
@@ -96,14 +102,16 @@ public class DatabaseRouteStorageProvider implements RouteStorageProvider {
     private RouteDao rowToRouteDao(RouteRow row) {
         try {
             RouteDto dto = jsonMapper.readValue(row.getConfigJson(), RouteDto.class);
-            // Honour the DB-level enabled flag (it may differ from the JSON payload)
-            if (dto.enabled() != row.isEnabled()) {
+            // Honour the DB-level enabled flag and row key/version (they may differ from the JSON payload)
+            if (dto.enabled() != row.isEnabled()
+                    || dto.version() != row.getVersion()
+                    || !row.getId().equals(dto.pathPattern())) {
                 dto = new RouteDto(
-                        dto.stripPrefix(), dto.pathPattern(), dto.timeoutMs(), dto.targets(),
+                        dto.stripPrefix(), row.getId(), dto.timeoutMs(), dto.targets(),
                         row.isEnabled(), dto.headerRules(), dto.circuitBreakerPolicy(),
                         dto.loadBalancerType(), dto.authForwardHeaders(), dto.rateLimitPolicy(),
                         dto.routingType(), dto.cachePolicy(), dto.name(), dto.auditStore(),
-                        dto.id(), dto.auditEnabled(), dto.metaData());
+                        dto.id(), dto.auditEnabled(), row.getVersion(), dto.metaData());
             }
             return RouteMapper.routeDtoToRouteDao(dto);
         } catch (Exception e) {

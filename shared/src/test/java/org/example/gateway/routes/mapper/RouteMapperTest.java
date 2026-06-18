@@ -110,7 +110,9 @@ class RouteMapperTest {
                 "Updated Route",  // name
                 oldRoute.auditStore(),
                 oldRoute.id(),
-                oldRoute.auditEnabled()
+                oldRoute.auditEnabled(),
+                oldRoute.version(),
+                null
         );
         
         RouteDto merged = RouteMapper.mergeRouteDtos(oldRoute, newRoute);
@@ -143,7 +145,9 @@ class RouteMapperTest {
                 "Modified Name",  // Changed
                 original.auditStore(),
                 original.id(),
-                original.auditEnabled()
+                original.auditEnabled(),
+                original.version(),
+                null
         );
         
         Map<String, DiffModel> differences = RouteMapper.findRouteDifferences(original, modified);
@@ -190,7 +194,9 @@ class RouteMapperTest {
                 original.name(),
                 original.auditStore(),
                 original.id(),
-                original.auditEnabled()
+                original.auditEnabled(),
+                original.version(),
+                null
         );
         
         Map<String, DiffModel> differences = RouteMapper.findRouteDifferences(original, modified);
@@ -208,11 +214,12 @@ class RouteMapperTest {
         
         Object[] rowData = RouteMapper.routeDtoToRowData(routeDto);
         
-        assertThat(rowData).hasSize(4);
-        assertThat(rowData[0]).isEqualTo("route-1");  // id
+        assertThat(rowData).hasSize(5);
+        assertThat(rowData[0]).isEqualTo("/api/v1/users");  // pathPattern
         assertThat(rowData[1]).isEqualTo("Sample Route");  // name
         assertThat(rowData[2]).isNotNull();  // configJson
         assertThat(rowData[3]).isEqualTo(true);  // enabled
+        assertThat(rowData[4]).isEqualTo(1L);  // version
     }
 
     @Test
@@ -227,8 +234,9 @@ class RouteMapperTest {
         assertThat(cloned).isNull();
         
         Object[] rowData = RouteMapper.routeDtoToRowData(null);
-        assertThat(rowData).hasSize(4);
+        assertThat(rowData).hasSize(5);
         assertThat(rowData[3]).isEqualTo(false);
+        assertThat(rowData[4]).isEqualTo(0L);
     }
 
     @Test
@@ -269,7 +277,9 @@ class RouteMapperTest {
                 "Sample Route",
                 "database",
                 "route-1",
-                true
+                true,
+                1L,
+                null
         );
     }
 }

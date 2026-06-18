@@ -29,9 +29,8 @@ dependencies {
     runtimeOnly(libs.flyway.postgresql)
 
     //
-    implementation("org.eclipse.store:storage-embedded:4.1.0")
-    implementation("org.eclipse.store:afs-azure-storage:4.1.0")
-    implementation("com.azure:azure-storage-blob:12.29.0")
+    implementation("com.azure:azure-data-tables:12.5.9")
+    implementation("com.azure:azure-identity:1.18.1")
 
 
     // Flyway — schema migrations

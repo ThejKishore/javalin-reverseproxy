@@ -1,12 +1,9 @@
 gateway:
   port: 8080
 
-  # Where to load routes from: "yaml" (this file)
-  # or "database"
-  # or "eclipse-store-lcl" (local file store for Eclipse IDE users)
-  # or eclipse-store-azure (Azure Blob Storage for Eclipse IDE users)
+  # Where to load routes from: "yaml" (this file), "database", or "azure-table"
 
-  config-source: eclipse-store-lcl
+  config-source: azure-table
 #  config-source: database
 
   # How often routes are refreshed from the source (seconds)
@@ -17,21 +14,6 @@ gateway:
     url: "jdbc:h2:mem:gateway;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
     username: sa
     password: ""
-
-  # ── EclipseStore configuration (used when config-source is eclipse-store-*) ──
-  eclipse-store:
-    routes:
-      local-config: "eclipsestore/routes-storage-local.yaml"
-      azure-config: "eclipsestore/routes-storage-azure.yaml"
-    audit:
-      local-config: "eclipsestore/audit-storage-local.yaml"
-      azure-config: "eclipsestore/audit-storage-azure.yaml"
-    changelog:
-      local-config: "eclipsestore/changelog-storage-local.yaml"
-      azure-config: "eclipsestore/changelog-storage-azure.yaml"
-    validationrule:
-      local-config: "eclipsestore/validationrule-storage-local.yaml"
-      azure-config: "eclipsestore/validationrule-storage-azure.yaml"
 
   # ── Hazelcast — distributed CSRF token store ──────────────────────────────
   hazelcast:

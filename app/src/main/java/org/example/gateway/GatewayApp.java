@@ -149,7 +149,7 @@ public class GatewayApp {
         RouteLoader loader = new RouteLoader(config, registry, storageProvider);
         loader.load();
         AdminController admin = new AdminController(registry, loader, storageProvider,
-                validationRuleStore, changeLogProvider, validationRuleStorageProvider);
+                validationRuleStore, auditProvider, changeLogProvider, validationRuleStorageProvider);
         AuditController audit = new AuditController(auditProvider, changeLogProvider);
         HealthController health = new HealthController(registry);
         OpenApiExportConfig openApiExportConfig = config.getOpenApiExport();
@@ -183,7 +183,7 @@ public class GatewayApp {
                     path("/routes", () -> {
                         get(admin::listRoutes);
                         post(admin::createRoute);
-                        path("/{id}", () -> {
+                        path("/<pathPattern>", () -> {
                             get(admin::getRoute);
                             put(admin::updateRoute);
                             delete(admin::deleteRoute);
@@ -264,4 +264,3 @@ public class GatewayApp {
         return Map.of("status", status, "error", message);
     }
 }
-

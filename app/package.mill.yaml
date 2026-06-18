@@ -1,0 +1,33 @@
+extends: millbuild.ProjectBaseModule
+moduleDeps: [shared, utilities]
+mvnDeps:
+- com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.17.0
+- org.jdbi:jdbi3-core:3.45.4
+- org.jdbi:jdbi3-sqlobject:3.45.4
+- com.h2database:h2:2.2.224
+- org.postgresql:postgresql:42.7.3
+- com.azure:azure-storage-blob:12.29.0
+- org.flywaydb:flyway-core:10.10.0
+- ch.qos.logback:logback-classic:1.5.6
+- io.jsonwebtoken:jjwt-api:0.12.6
+- com.hazelcast:hazelcast:5.4.0;exclude=org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api;exclude=jakarta.servlet:jakarta.servlet-api
+- org.owasp.esapi:esapi:2.7.0.0
+- com.azure:azure-data-tables:12.5.0
+- com.azure:azure-identity:1.18.1
+runMvnDeps:
+- org.flywaydb:flyway-database-postgresql:10.10.0
+- io.jsonwebtoken:jjwt-impl:0.12.6
+- io.jsonwebtoken:jjwt-jackson:0.12.6
+forkArgs: [--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED]
+forkEnv:
+  app_env: development
+
+object test:
+  extends: ProjectBaseTests
+  mvnDeps:
+  - com.squareup.okhttp3:mockwebserver:4.12.0
+  - org.mockito:mockito-core:5.12.0
+  - org.mockito:mockito-junit-jupiter:5.12.0
+  - org.assertj:assertj-core:3.25.3
+  - com.h2database:h2:2.2.224
+  forkArgs: [--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED]

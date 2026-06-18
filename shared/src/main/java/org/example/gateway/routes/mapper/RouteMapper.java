@@ -8,6 +8,7 @@
 package org.example.gateway.routes.mapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.example.gateway.routes.helper.AzureTableRouteKeyHelper;
 import org.example.gateway.routes.model.RouteDto;
 
 import java.io.IOException;
@@ -63,17 +64,18 @@ public class RouteMapper {
      * This is a convenience method that extracts top-level properties from RouteDto.
      *
      * @param routeDto the RouteDto to convert
-     * @return an object array with [id, name, configJson, enabled]
+     * @return an object array with [pathPattern, name, configJson, enabled, version]
      */
     public static Object[] routeDtoToRowData(RouteDto routeDto) {
         if (routeDto == null) {
-            return new Object[]{null, null, null, false};
+            return new Object[]{null, null, null, false, 0L};
         }
         return new Object[]{
-                routeDto.id(),
+                routeDto.pathPattern(),
                 routeDto.name(),
                 routeDtoToJson(routeDto),
-                routeDto.enabled()
+                routeDto.enabled(),
+                routeDto.version()
         };
     }
 
@@ -126,6 +128,7 @@ public class RouteMapper {
                 nvl(newRoute.auditStore(), oldRoute.auditStore()),
                 nvl(newRoute.id(), oldRoute.id()),
                 newRoute.auditEnabled() != oldRoute.auditEnabled() ? newRoute.auditEnabled() : oldRoute.auditEnabled(),
+                newRoute.version() > 0 ? newRoute.version() : oldRoute.version(),
                 nvl(newRoute.metaData(), oldRoute.metaData())
         );
     }
@@ -176,6 +179,7 @@ public class RouteMapper {
                 dto.auditStore(),
                 dto.id(),
                 dto.auditEnabled(),
+                dto.version(),
                 dto.metaData());
     }
 
@@ -204,8 +208,9 @@ public class RouteMapper {
                 toCachePolicyDto(dao.cachePolicy()),
                 dao.name(),
                 dao.auditStore(),
-                dao.id(),
+                AzureTableRouteKeyHelper.encodeRowKey(dao.pathPattern()),
                 dao.auditEnabled(),
+                dao.version(),
                 dao.metaData());
     }
 

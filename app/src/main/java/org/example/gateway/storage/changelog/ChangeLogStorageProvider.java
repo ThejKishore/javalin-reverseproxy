@@ -16,9 +16,8 @@ import java.util.List;
  *
  * <p>Implementations are selected at startup based on {@code config-source}:
  * <ul>
- *   <li>{@code database}            → {@link DatabaseChangeLogStorageProvider} (JDBI)</li>
- *   <li>{@code eclipse-store-lcl}   → {@link EclipseStoreLocalChangeLogStorageProvider}</li>
- *   <li>{@code eclipse-store-azure} → {@link EclipseStoreAzureChangeLogStorageProvider}</li>
+ *   <li>{@code database}    → {@link DatabaseChangeLogStorageProvider} (JDBI)</li>
+ *   <li>{@code azure-table} → Azure Table Storage implementation</li>
  * </ul>
  *
  * <p>Change logs are append-only — there are no update or delete operations.

@@ -44,9 +44,9 @@ public class GatewayConfig {
     @JsonProperty("hazelcast")
     private HazelcastConfig hazelcast = new HazelcastConfig();
 
-    /** EclipseStore configuration (used when config-source = eclipse-store-lcl or eclipse-store-azure). */
-    @JsonProperty("eclipse-store")
-    private EclipseStoreConfig eclipseStore = new EclipseStoreConfig();
+    /** Azure Table Storage configuration (used when config-source = azure-table). */
+    @JsonProperty("azure-table")
+    private AzureTableConfig azureTable = new AzureTableConfig();
 
     /**
      * Global JWT policy applied to every route by default.
@@ -95,8 +95,8 @@ public class GatewayConfig {
     public HazelcastConfig getHazelcast() { return hazelcast; }
     public void setHazelcast(HazelcastConfig hazelcast) { this.hazelcast = hazelcast; }
 
-    public EclipseStoreConfig getEclipseStore() { return eclipseStore; }
-    public void setEclipseStore(EclipseStoreConfig eclipseStore) { this.eclipseStore = eclipseStore; }
+    public AzureTableConfig getAzureTable() { return azureTable; }
+    public void setAzureTable(AzureTableConfig azureTable) { this.azureTable = azureTable; }
 
     public JwtPolicy getJwtPolicy() { return jwtPolicy; }
     public void setJwtPolicy(JwtPolicy jwtPolicy) { this.jwtPolicy = jwtPolicy; }

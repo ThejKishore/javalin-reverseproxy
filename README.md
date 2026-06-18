@@ -577,20 +577,147 @@ For YAML-sourced routes in multi-instance deployments, mount `application.yml` a
 
 ## Building & Running
 
+### Build Tool: Mill
+
+This project uses **Mill**, a modern, lightweight build tool for the JVM that offers:
+- **Declarative configuration** via `*.mill.yaml` files (1/10th the size of Maven/Gradle)
+- **Aggressive caching & parallelism** — 3-7x faster builds than Maven/Gradle
+- **Object-oriented build structure** — easy to understand and extend
+- **Multi-module support** with clear module boundaries
+
+#### Prerequisites
+
+- Java 21+
+- Mill 1.1.6+ (install via [Mill docs](https://mill-build.org/) or Homebrew: `brew install mill`)
+
+#### Quick Reference: Common Mill Commands
+
+| Command | Purpose |
+|---------|---------|
+| `mill app.run` | Run the gateway application locally |
+| `mill app.test` | Run all app module tests |
+| `mill utilities.test` | Run utilities module tests |
+| `mill shared.test` | Run shared module tests |
+| `mill test` | Run all tests across all modules |
+| `mill app.compile` | Compile app module sources |
+| `mill app.assembly` | Build executable JAR with all dependencies |
+| `mill __.compile` | Compile all modules |
+| `mill __.test` | Run all tests (same as `mill test`) |
+
+#### Running the Gateway
+
 ```bash
-# Run locally
-./gradlew :app:run
+# Start the gateway
+mill app.run
 
-# Run all tests
-./gradlew test
-
-# Module-specific tests
-./gradlew :utilities:test
-./gradlew :app:test
-
-# Build distribution ZIP
-./gradlew :app:installDist
+# With custom environment (sets JVM args and env variables)
+mill app.run
+# NB: VM arg `--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED` 
+# and env var `app_env=development` are auto-configured
 ```
+
+#### Running Tests
+
+```bash
+# Run all tests across all modules
+mill test
+
+# Run app module tests only
+mill app.test
+
+# Run utilities module tests only
+mill utilities.test
+
+# Run shared module tests only
+mill shared.test
+
+# Run tests with watch mode (re-runs on source changes)
+mill test -w
+
+# Run a specific test class
+mill app.test org.example.gateway.api.AdminControllerTest
+```
+
+#### Building Distributions
+
+```bash
+# Build a standalone executable JAR
+mill app.assembly
+
+# Output: out/app/assembly.dest/out.jar
+
+# Build dist ZIP with launcher scripts
+mill app.installDist
+
+# Output: out/app/installDist.dest/
+```
+
+#### Module Structure & Dependencies
+
+The project is organized into three modules:
+
+**`app/`** — Main Javalin application
+- Depends on: `shared`, `utilities`
+- Contains: Gateway entry point, controllers, configuration, database, proxy logic, admin APIs
+- Build config: `app/package.mill.yaml`
+
+**`utilities/`** — Reusable filter & routing primitives
+- Depends on: `shared`
+- Contains: Filter chains, load balancers, rate limiters, circuit breaker, cache, routing matchers
+- **No app-layer dependencies** — can be used independently
+- Build config: `utilities/package.mill.yaml`
+
+**`shared/`** — Common DTOs and mapper utilities
+- Depends on: nothing (leaf module)
+- Contains: RouteDefinition, TargetDefinition, and cross-module DAO/mapping helpers
+- Build config: `shared/package.mill.yaml`
+
+Module dependency graph:
+```
+app ──────────┐
+              ├──→ shared
+utilities ────┘
+```
+
+#### Running Tests Per Module
+
+Tests are nested under each module:
+
+```bash
+# App tests
+mill app.test
+
+# Utilities tests
+mill utilities.test
+
+# Shared tests
+mill shared.test
+
+# All at once (parallel by default)
+mill test
+```
+
+Each test module is configured with JUnit 5 (`TestModule.Junit5`) via the base `ProjectBaseModule` in `mill-build/src/ProjectBaseModule.scala`.
+
+#### Troubleshooting Mill
+
+If you encounter issues:
+
+```bash
+# Clear Mill's cache
+rm -rf out/
+
+# Re-run with verbose output
+mill --debug app.test
+
+# Show module dependencies
+mill --show app.moduleDeps
+
+# List all available tasks
+mill --help
+```
+
+For more details, see the [Mill documentation](https://mill-build.org/mill/).
 
 ---
 
@@ -644,3 +771,11 @@ javalin-gateway/
 ## License
 
 Apache License 2.0 — see [LICENSE](LICENSE).
+
+```shell
+
+az role assignment create \
+--role "Storage Table Data Contributor" \
+--assignee $(az ad signed-in-user show --query id -o tsv) \
+--scope "/subscriptions/bc01e45b-fca2-4819-ac40-e8d9aeade6a9/resourceGroups/rg-datalake-demo/providers/Microsoft.Storage/storageAccounts/thejdatalake"
+```

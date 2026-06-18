@@ -101,11 +101,11 @@ public class ConsolidatedOpenApiController {
     private void addAdminPaths(Map<String, Object> paths) {
         addOperation(paths, "/gateway/admin/routes", "get", "List gateway routes", "Admin");
         addOperation(paths, "/gateway/admin/routes", "post", "Create gateway route", "Admin");
-        addOperation(paths, "/gateway/admin/routes/{id}", "get", "Get gateway route", "Admin");
-        addOperation(paths, "/gateway/admin/routes/{id}", "put", "Update gateway route", "Admin");
-        addOperation(paths, "/gateway/admin/routes/{id}", "delete", "Delete gateway route", "Admin");
-        addOperation(paths, "/gateway/admin/routes/{id}/enable", "patch", "Enable gateway route", "Admin");
-        addOperation(paths, "/gateway/admin/routes/{id}/disable", "patch", "Disable gateway route", "Admin");
+        addOperation(paths, "/gateway/admin/routes/{pathPattern}", "get", "Get gateway route", "Admin");
+        addOperation(paths, "/gateway/admin/routes/{pathPattern}", "put", "Update gateway route", "Admin");
+        addOperation(paths, "/gateway/admin/routes/{pathPattern}", "delete", "Delete gateway route", "Admin");
+        addOperation(paths, "/gateway/admin/routes/{pathPattern}/enable", "patch", "Enable gateway route", "Admin");
+        addOperation(paths, "/gateway/admin/routes/{pathPattern}/disable", "patch", "Disable gateway route", "Admin");
         addOperation(paths, "/gateway/admin/reload", "post", "Reload gateway routes", "Admin");
 
         addOperation(paths, "/gateway/admin/security/rules", "get", "List validation rules", "Admin Security");

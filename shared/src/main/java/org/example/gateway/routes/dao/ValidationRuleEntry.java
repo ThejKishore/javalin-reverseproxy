@@ -12,9 +12,8 @@ import java.time.Instant;
 /**
  * Persistence POJO for a validation rule.
  *
- * <p>Used by all {@code ValidationRuleStorageProvider} implementations (JDBI, EclipseStore
- * local, EclipseStore Azure).  Mirrors {@code ValidationRuleRow} but as an immutable record
- * so that EclipseStore can serialise / deserialise it natively without JDBI annotations.
+ * <p>Used by all {@code ValidationRuleStorageProvider} implementations (JDBI and Azure Table Storage).
+ * Mirrors {@code ValidationRuleRow} as an immutable record.
  *
  * <p>The {@code target} field is one of: {@code QUERY_PARAM}, {@code HEADER},
  * {@code COOKIE}, {@code BODY}, {@code ALL}.

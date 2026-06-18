@@ -22,7 +22,7 @@ class YamlConfigLoaderTest {
         assertNotNull(config);
         assertEquals(8080, config.getPort());
         assertTrue(
-            java.util.Set.of("yaml", "database", "eclipse-store-lcl", "eclipse-store-azure")
+            java.util.Set.of("yaml", "database", "azure-table")
                 .contains(config.getConfigSource()),
             "config-source should be one of the supported values"
         );
@@ -54,32 +54,9 @@ class YamlConfigLoaderTest {
     }
 
     @Test
-    void eclipseStoreUsesPerStoreYamlConfigPaths() throws Exception {
+    void azureTableConfigIsPresent() throws Exception {
         GatewayConfig config = new YamlConfigLoader().load();
 
-        assertNotNull(config.getEclipseStore());
-        assertEquals("eclipsestore/routes-storage-local.yaml",
-                config.getEclipseStore().getRoutes().getLocalConfig());
-        assertEquals("eclipsestore/routes-storage-azure.yaml",
-                config.getEclipseStore().getRoutes().getAzureConfig());
-        assertEquals("eclipsestore/audit-storage-local.yaml",
-                config.getEclipseStore().getAudit().getLocalConfig());
-        assertEquals("eclipsestore/changelog-storage-azure.yaml",
-                config.getEclipseStore().getChangelog().getAzureConfig());
-        assertEquals("eclipsestore/validationrule-storage-local.yaml",
-                config.getEclipseStore().getValidationrule().getLocalConfig());
-    }
-
-    @Test
-    void storeSpecificStorageYamlLoadsOfficialKeys() {
-        EclipseStoreStorageSettings settings = EclipseStoreStorageConfigurationLoader
-                .load("eclipsestore/audit-storage-local.yaml");
-
-        assertEquals("./eclipse-store-data/audit", settings.getStorageDirectory());
-        assertEquals(Integer.valueOf(4), settings.getChannelCount());
-        assertEquals("channel_", settings.getDataFilePrefix());
-        assertEquals("transactions_", settings.getTransactionFilePrefix());
-        assertEquals(Integer.valueOf(104857600), settings.getTransactionFileMaximumSize());
+        assertNotNull(config.getAzureTable());
     }
 }
-
